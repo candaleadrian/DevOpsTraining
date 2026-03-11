@@ -129,6 +129,50 @@ make ready-to-commit   # Prepare commit
 make help              # See all available commands
 ```
 
+## Running the Backend Locally
+
+To start the backend locally, follow these steps:
+
+### Prerequisites
+- Ensure Python 3.11 is installed on your system.
+- Install `pip` for managing Python packages.
+
+### Steps
+
+1. **Set Up the Virtual Environment:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # For Linux/Mac
+   # On Windows:
+   # venv\Scripts\activate
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the Backend:**
+   - Using `uvicorn`:
+     ```bash
+     uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+     ```
+   - Or, if a `Makefile` is available:
+     ```bash
+     make dev-backend
+     ```
+
+4. **Access the Backend:**
+   - Open your browser and navigate to:
+     - API Root: [http://localhost:8000](http://localhost:8000)
+     - API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+5. **Verify the Backend:**
+   - Test the root endpoint:
+     ```bash
+     curl http://localhost:8000
+     ```
+
 ## ✅ Success Milestones
 
 - [ ] ✅ Local environment running with `make up`
