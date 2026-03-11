@@ -40,7 +40,7 @@ This runs: `clean` → `setup` → `up` and your app is live!
 git clone https://github.com/yourusername/proximity-alarm-app.git
 cd proximity-alarm-app
 
-# 2. Setup backend and frontend
+# 2. Setup project
 make setup
 
 # 3. Start all services
@@ -82,7 +82,7 @@ make dev-backend
 # or
 cd backend
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-uvicorn src.main:app --reload
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 3. Frontend Development
@@ -94,6 +94,8 @@ make dev-frontend
 cd frontend
 npx expo start
 ```
+
+If the frontend is not scaffolded yet, frontend commands are skipped and you can continue backend-only.
 
 ### 4. Request an API
 

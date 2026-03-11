@@ -141,6 +141,7 @@ To start the backend locally, follow these steps:
 
 1. **Set Up the Virtual Environment:**
    ```bash
+   cd backend
    python3 -m venv venv
    source venv/bin/activate  # For Linux/Mac
    # On Windows:
@@ -162,12 +163,20 @@ To start the backend locally, follow these steps:
      make dev-backend
      ```
 
-4. **Access the Backend:**
+4. **Run with Docker (Backend + PostgreSQL):**
+    ```bash
+    make up
+    ```
+    This starts:
+    - FastAPI backend on port `8000`
+    - PostgreSQL on port `5432`
+
+5. **Access the Backend:**
    - Open your browser and navigate to:
      - API Root: [http://localhost:8000](http://localhost:8000)
      - API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-5. **Verify the Backend:**
+6. **Verify the Backend:**
    - Test the root endpoint:
      ```bash
      curl http://localhost:8000

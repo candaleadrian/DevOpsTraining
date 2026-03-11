@@ -38,8 +38,12 @@ setup-backend:
 
 setup-frontend:
 	@echo "Setting up frontend..."
-	@cd frontend && npm install
-	@echo "✓ Frontend setup complete"
+	@if [ -f frontend/package.json ]; then \
+		cd frontend && npm install; \
+		echo "✓ Frontend setup complete"; \
+	else \
+		echo "! Frontend skipped (frontend/package.json not found)"; \
+	fi
 
 # Docker compose
 up:
@@ -75,11 +79,19 @@ test-backend:
 
 test-frontend:
 	@echo "Running frontend tests..."
-	@cd frontend && npm test -- --passWithNoTests
-	@echo "✓ Frontend tests complete"
+	@if [ -f frontend/package.json ]; then \
+		cd frontend && npm test -- --passWithNoTests; \
+		echo "✓ Frontend tests complete"; \
+	else \
+		echo "! Frontend tests skipped (frontend/package.json not found)"; \
+	fi
 
 test-watch-frontend:
-	@cd frontend && npm test -- --watch
+	@if [ -f frontend/package.json ]; then \
+		cd frontend && npm test -- --watch; \
+	else \
+		echo "! Frontend watch tests skipped (frontend/package.json not found)"; \
+	fi
 
 # Linting
 lint: lint-backend lint-frontend
@@ -92,8 +104,12 @@ lint-backend:
 
 lint-frontend:
 	@echo "Linting frontend..."
-	@cd frontend && npm run lint || true
-	@echo "✓ Frontend linting complete"
+	@if [ -f frontend/package.json ]; then \
+		cd frontend && npm run lint || true; \
+		echo "✓ Frontend linting complete"; \
+	else \
+		echo "! Frontend lint skipped (frontend/package.json not found)"; \
+	fi
 
 # Database
 psql:
@@ -114,7 +130,11 @@ dev-backend:
 	@cd backend && . venv/bin/activate 2>/dev/null || true; uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
 dev-frontend:
-	@cd frontend && npm start
+	@if [ -f frontend/package.json ]; then \
+		cd frontend && npm start; \
+	else \
+		echo "! Frontend dev server skipped (frontend/package.json not found)"; \
+	fi
 
 # Utility
 clean:
@@ -169,8 +189,12 @@ docker-build-backend:
 
 docker-build-frontend:
 	@echo "Building frontend image..."
-	docker build -t proximity-alarm-frontend:latest frontend/
-	@echo "✓ Frontend image built"
+	@if [ -f frontend/Dockerfile ]; then \
+		docker build -t proximity-alarm-frontend:latest frontend/; \
+		echo "✓ Frontend image built"; \
+	else \
+		echo "! Frontend image build skipped (frontend/Dockerfile not found)"; \
+	fi
 
 # First time setup
 .PHONY: first-run
