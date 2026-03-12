@@ -4,67 +4,49 @@ Quick start guide for setting up and running the Proximity Alarm application.
 
 ## Prerequisites
 
-Before starting, ensure you have installed:
 - **Git**: https://git-scm.com/
 - **Docker Desktop**: https://www.docker.com/products/docker-desktop
-- **Python 3.11+**: https://www.python.org/downloads/
-- **Node.js 20 LTS+**: https://nodejs.org/
-- **VS Code**: https://code.visualstudio.com/
-
-### Verify Installation
+- **Make**: Available by default on Linux/macOS
 
 ```bash
 git --version
 docker --version
-python --version
-node --version
-npm --version
+docker compose version
+make --version
 ```
 
-All should return version numbers.
+> **Note**: You do NOT need Python or Node.js installed locally — everything runs inside Docker containers.
 
-## Quick Start (5 minutes)
-
-### Option 1: One Command (Recommended)
-
-```bash
-make first-run
-```
-
-This runs: `clean` → `setup` → `up` and your app is live!
-
-### Option 2: Step by Step
+## Quick Start
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/proximity-alarm-app.git
+git clone <repo-url>
 cd proximity-alarm-app
 
-# 2. Setup project
-make setup
-
-# 3. Start all services
+# 2. Build and start all services
 make up
 
-# 4. Verify it's working
-curl http://localhost:8000/
-# Should return: {"message": "Hello World from Proximity Alarm API! 🎯", ...}
+# 3. Verify
+curl http://localhost:8000/health
+# → {"status":"ok"}
 ```
 
-## Access the Application
+Open http://localhost:8081 in your browser to use the app.
 
-After running `make up`:
+## Access Points
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| API | http://localhost:8000 | Backend API |
-| API Docs | http://localhost:8000/docs | Interactive API documentation |
+| Frontend | http://localhost:8081 | Expo Web app (Leaflet map) |
+| API | http://localhost:8000 | FastAPI backend |
+| API Docs | http://localhost:8000/docs | Interactive Swagger docs |
 | Health Check | http://localhost:8000/health | Service health status |
-| PostgreSQL | localhost:5432 | Database (use `make psql`) |
+| PostgreSQL | localhost:5432 | Database (`make psql`) |
 
 ## Development Workflow
 
-### 1. Daily Start
+### Daily Start
 
 ```bash
 # Start all services in background
@@ -74,148 +56,104 @@ make up
 docker-compose up
 ```
 
-### 2. Backend Development
+### 2. Development with Docker (Recommended)
+
+Everything runs in Docker with hot-reload:
 
 ```bash
-# Terminal 1: Start backend with hot reload
-make dev-backend
-# or
-cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# Start all services (postgres, backend, frontend)
+make up
+
+# View logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Rebuild after Dockerfile changes
+make docker-build
 ```
 
-### 3. Frontend Development
+- **Backend**: Python files in `backend/src/` are volume-mounted → auto-reload via uvicorn
+- **Frontend**: `frontend/` is volume-mounted → Expo Web auto-reloads on save
 
-```bash
-# Terminal 2: configure frontend API access
-cd frontend
-cp .env.example .env
+### 3. Frontend (Web)
 
-# Terminal 3: start frontend
-make dev-frontend
-# or
-cd frontend
-npx expo start
+The frontend runs as **Expo Web** (NOT native mobile). Open http://localhost:8081 in your browser.
+
+Key points:
+- Uses **Leaflet + OpenStreetMap** for the interactive map (react-native-maps does not work on Expo Web)
+- Browser geolocation requires `localhost` or HTTPS — access the app via `localhost:8081`, not an IP address
+- To simulate GPS position, use Chrome DevTools → Sensors → Location
+
+### 4. Frontend Structure
+
+```
+frontend/src/
+├── navigation/     # AppNavigator (bottom tabs + stack)
+├── screens/        # MapScreen, SettingsScreen, HomeScreen, AlarmDetailScreen
+├── services/       # alarmPreferences, alarmTrigger, locationService, health
+├── ui/             # Reusable layout primitives
+├── config/         # Theme, constants
+└── hooks/          # Custom hooks
 ```
 
-The frontend uses Expo. On first run, Expo opens an interactive terminal where you choose the target:
-- `a` for Android
-- `i` for iOS on macOS
-- `w` for web
+### 5. API Endpoints
 
-If Expo reports engine issues, check your Node version first. This frontend currently expects Node 20+.
+The backend currently provides:
 
-The first frontend/backend integration uses `EXPO_PUBLIC_API_BASE_URL` from `frontend/.env`. On web, `http://localhost:8000` works when the backend is running locally. On a real phone or emulator, `localhost` usually points to the device itself, so you will need to use your machine IP instead.
-
-### Current Frontend Structure
-
-The frontend now uses a simple but production-minded structure:
-
-- `src/navigation` contains navigators and route types.
-- `src/screens` contains screen-level components.
-- `src/ui` contains reusable layout primitives.
-
-This is the right time to create structure, before API calls, maps, and state management start adding complexity.
-
-### 4. Request an API
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Root message |
+| `GET` | `/health` | Health check |
+| `POST` | `/set-location` | Set alarm point (lat, lng, radius) |
+| `POST` | `/check-location` | Check proximity (returns alarm + distance) |
 
 ```bash
-# Create an alarm point
-curl -X POST http://localhost:8000/api/alarms/points \
+# Set an alarm point
+curl -X POST http://localhost:8000/set-location \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Home",
-    "latitude": 40.7128,
-    "longitude": -74.0060,
-    "radius_meters": 200
-  }'
+  -d '{"latitude": 44.4268, "longitude": 26.1025, "radius": 500}'
 
-# List alarm points
-curl http://localhost:8000/api/alarms/points
-
-# Get a specific alarm point
-curl http://localhost:8000/api/alarms/points/1
+# Check if a position is within the radius
+curl -X POST http://localhost:8000/check-location \
+  -H "Content-Type: application/json" \
+  -d '{"latitude": 44.4270, "longitude": 26.1030}'
 ```
+
+> **Note**: The backend currently stores the alarm point in memory (global variable). Database persistence is planned.
 
 ## Testing
 
-### Run All Tests
+> Tests are not yet implemented. This is on the roadmap.
 
 ```bash
-make test
-```
-
-### Backend Tests Only
-
-```bash
-make test-backend
-
-# Or manually:
-cd backend
-source venv/bin/activate
-pytest tests/unit/ -v           # Unit tests
-pytest tests/integration/ -v    # Integration tests
-pytest tests/ -v --cov          # With coverage
-```
-
-### Frontend Tests Only
-
-```bash
-make test-frontend
-
-# Or manually:
-cd frontend
-npm test
-
-# Watch mode (re-run on changes)
-make test-watch-frontend
+make test           # Run all tests (placeholder)
+make test-backend   # Backend tests (planned: pytest)
+make test-frontend  # Frontend tests (planned: Jest)
 ```
 
 ## Code Quality
 
-### Lint Code
-
 ```bash
-make lint
-```
-
-### Lint Backend Only
-```bash
-make lint-backend
-# Checks with flake8, mypy
-```
-
-### Lint Frontend Only
-```bash
-make lint-frontend
+make lint           # Lint all
+make lint-backend   # flake8, mypy
+make lint-frontend  # eslint
 ```
 
 ## Database
 
-### Access Database
+PostgreSQL is running in Docker but **no tables have been created yet**. The backend uses in-memory state. Database persistence is on the roadmap.
 
 ```bash
-make psql
+make psql           # Connect to the database
 
 # Inside psql:
-\dt                    # List tables
-SELECT * FROM alarm_points;  # Query data
-\q                     # Quit
+\dt                 # List tables (none yet)
+\q                  # Quit
 ```
 
-### Reset Database
-
+To reset everything:
 ```bash
-make clean             # Clean everything including DB volumes
-make up               # Restart with fresh database
-```
-
-### Seed Test Data
-
-```bash
-make db-seed
-# This populates database with test alarm points
+make clean && make up
 ```
 
 ## Git Workflow
@@ -272,132 +210,83 @@ git commit -m "feat: add proximity calculation service
 ### "Port 8000 already in use"
 
 ```bash
-# Kill the process using port 8000
-lsof -ti:8000 | xargs kill -9  # Mac/Linux
-netstat -ano | findstr :8000   # Windows (find PID, then)
-taskkill /PID <PID> /F
+lsof -ti:8000 | xargs kill -9
 ```
 
 ### "Docker daemon not running"
 
-Start Docker Desktop or Docker service. On Linux:
 ```bash
 sudo systemctl start docker
 ```
 
-### "Permission denied" in database
+### Map not showing / blank page
 
-```bash
-make clean
-make up
-# This resets everything
-```
+- Make sure you access via `http://localhost:8081` (not an IP)
+- Leaflet CSS/JS is loaded from CDN — you need internet access
+- Check browser console for errors
 
-### Tests failing locally but passing in CI
+### Geolocation not working
 
-- Check Python version: `python --version`
-- Check Node version: `node --version`
-- Delete cache: `make clean`
-- Reinstall: `make setup`
+- Browser blocks geolocation on non-HTTPS origins (except `localhost`)
+- Use Chrome DevTools → Sensors → Location to simulate coordinates
+- Make sure the browser has location permission for the page
 
 ### Backend can't connect to database
 
 ```bash
-# Check services are running
-docker-compose ps
-
-# View logs
-docker-compose logs postgres
-docker-compose logs backend
-
-# Restart
-make down && make up
+docker-compose ps           # Check services
+docker-compose logs postgres  # Check DB logs
+make down && make up        # Restart
 ```
 
 ## Development Tips
 
 ### Hot Reload
 
-Both backend and frontend support live reloading:
-- **Backend**: Changes to Python files auto-reload
-- **Frontend**: Changes to React Native code auto-reload
-
-### IDE Integration
-
-**VS Code Extensions to Install:**
-1. Python (ms-python.python)
-2. Pylance (ms-python.vscode-pylance)
-3. ES7+ React/Redux/React-Native snippets
-4. Docker (ms-vscode.docker)
-5. REST Client (humao.rest-client) - for testing APIs
+Both services support live reloading when running via Docker:
+- **Backend**: Changes to `backend/src/` Python files auto-reload (uvicorn `--reload`)
+- **Frontend**: Changes to `frontend/src/` auto-reload (Expo Web)
 
 ### Debugging Backend
 
-```python
-# Add breakpoint in Python code
-import pdb; pdb.set_trace()
+Visit http://localhost:8000/docs for interactive Swagger UI to test endpoints.
 
-# Or use debugger in VS Code (requires launch.json)
+```bash
+# View backend logs
+docker-compose logs -f backend
 ```
 
 ### Debugging Frontend
 
-```tsx
-// React Native debugging
-console.log('Debug info:', variable);
-
-// Or use Expo DevTools
-```
+Open browser DevTools (F12) → Console for React errors, network requests, and geolocation issues.
 
 ## Common Tasks
 
-### Update Dependencies
+### Rebuild Containers
 
 ```bash
-# Backend
-cd backend
-source venv/bin/activate
-pip install --upgrade -r requirements.txt
-
-# Frontend
-cd frontend
-npm update
+make docker-build && make up
 ```
 
-### Format Code
+### View All Logs
 
 ```bash
-# Backend (Python)
-cd backend
-source venv/bin/activate
-black src/
-isort src/
-
-# Frontend (JavaScript)
-cd frontend
-npm run format
+make logs
+# or
+docker-compose logs -f
 ```
 
-### Generate API Client SDK (Optional)
+### Stop Everything
 
 ```bash
-# Install openapi-generator
-brew install openapi-generator
-
-# Generate TypeScript client for frontend
-openapi-generator generate \
-  -i http://localhost:8000/openapi.json \
-  -g typescript-axios \
-  -o frontend/src/services/api-client
+make down
 ```
 
-## Next Steps
+### Clean Everything (including DB data)
 
-1. ✅ Run `make first-run`
-2. ✅ Visit http://localhost:8000/docs
-3. ✅ Make your first API call
-4. ✅ Run `make test` to see tests pass
-5. ✅ Make a code change and commit
+```bash
+make clean
+```
 6. ✅ Push to GitHub: `git push origin feat/your-feature`
 7. 📖 Read [DEVOPS_LEARNING_PLAN.md](./DEVOPS_LEARNING_PLAN.md) for the full plan
 

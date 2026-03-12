@@ -7,16 +7,16 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ---
 
-## PHASE 1: Setup & Hello World (1-2 weeks)
+## PHASE 1: Setup & Hello World ✅
 
 ### 1.1 Prerequisites Setup
-- [ ] Install Git
-- [ ] Install Docker Desktop
-- [ ] Install Python 3.11+
-- [ ] Install Node.js 18+
+- [x] Install Git
+- [x] Install Docker Desktop
+- [x] Install Python 3.11+
+- [x] Install Node.js 20+
 - [ ] Install Azure CLI
-- [ ] Install VS Code + extensions
-- **Status**: ⏳ Not Started
+- [x] Install VS Code + extensions
+- **Status**: 🟡 Mostly Done (Azure CLI pending)
 
 ### 1.2 Azure Setup
 - [ ] Create Azure account
@@ -29,275 +29,209 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - **Status**: ⏳ Not Started
 
 ### 1.3 GitHub Setup
-- [ ] Create GitHub repository: `proximity-alarm-app`
-- [ ] Clone locally
+- [x] Create GitHub repository
+- [x] Clone locally
 - [ ] Add GitHub Secrets (Azure credentials)
 - [ ] Set up branch protection on `main`
 - [ ] Create environments: dev, staging, production
-- **Status**: ⏳ Not Started
+- **Status**: 🚧 In Progress
 
 ### 1.4 Backend Hello World
-- [ ] Initialize project structure
-- [ ] Create `backend/src/main.py` with FastAPI app
-- [ ] Create `Dockerfile` for backend
-- [ ] Create `docker-compose.yml` for local dev
-- [ ] Test: `docker-compose up` → visit http://localhost:8000
-- [ ] First commit: "chore: initialize project with hello world backend"
-- **Status**: ⏳ Not Started
+- [x] Initialize project structure
+- [x] Create `backend/src/main.py` with FastAPI app
+- [x] Create `Dockerfile` for backend
+- [x] Create `docker-compose.yml` for local dev
+- [x] Test: `docker compose up` → visit http://localhost:8000
+- [x] Health endpoint: GET `/health` returns `{"status":"ok"}`
+- [x] CORS middleware configured for frontend
+- [x] First commit pushed
+- **Status**: ✅ Complete
 
 ### 1.5 Frontend Hello World
 - [x] Initialize React Native project with Expo
-- [x] Create Hello World screen
-- [ ] Create `Dockerfile` for frontend
-- [ ] Update docker-compose for frontend
-- [ ] Test: Frontend hot-reload works
-- [ ] Commit: "feat: initialize React Native hello world app"
-- **Status**: 🚧 In Progress
+- [x] Create navigation (Home, Map, Settings tabs)
+- [x] Create `Dockerfile` for frontend
+- [x] Update docker-compose for frontend service
+- [x] Test: Frontend hot-reload works on http://localhost:8081
+- [x] Commit pushed
+- **Status**: ✅ Complete
 
 ### 1.6 First Commits & Push
-- [ ] Verify local: `make up` runs successfully
-- [ ] Verify API docs at http://localhost:8000/docs
-- [ ] Push to GitHub: `git push origin main`
-- [ ] Confirm GitHub repo shows commits
-- **Status**: ⏳ Not Started
+- [x] Verify local: `make up` runs all services successfully
+- [x] Verify API docs at http://localhost:8000/docs
+- [x] Push to GitHub: `git push origin main`
+- [x] Confirm GitHub repo shows commits
+- **Status**: ✅ Complete
 
-**Phase 1 Complete?** ⏳ Not Started → 🟢 Complete
+**Phase 1 Complete?** 🟡 Mostly (Azure setup deferred to Phase 3)
 
 ---
 
-## PHASE 2: Development & Testing (2-3 weeks)
+## PHASE 2: Development & Testing 🚧
 
 ### 2.1 Backend Features
-- [ ] Create database models (AlarmPoint, User, Notification)
-- [ ] Add database migrations
-- [ ] Create API endpoints:
-  - [ ] POST `/api/alarms/points` - Create alarm
-  - [ ] GET `/api/alarms/points` - List alarms
-  - [ ] GET `/api/alarms/points/{id}` - Get alarm details
-  - [ ] PUT `/api/alarms/points/{id}` - Update alarm
-  - [ ] DELETE `/api/alarms/points/{id}` - Delete alarm
-- [ ] Implement proximity calculation service
-- [ ] Add geolocation endpoints
-- **Status**: ⏳ Not Started
+- [x] Proximity calculation service (Haversine formula)
+- [x] POST `/set-location` — set alarm point + radius
+- [x] POST `/check-location` — check if user is inside radius
+- [x] GET `/health` — health check
+- [ ] Database models (AlarmZone, User)
+- [ ] Database migrations with Alembic
+- [ ] CRUD endpoints for alarm zones:
+  - [ ] POST `/api/alarms` — create alarm zone
+  - [ ] GET `/api/alarms` — list alarm zones
+  - [ ] GET `/api/alarms/{id}` — get alarm zone
+  - [ ] PUT `/api/alarms/{id}` — update alarm zone
+  - [ ] DELETE `/api/alarms/{id}` — delete alarm zone
+- **Status**: 🚧 In Progress
 
 ### 2.2 Backend Testing
 - [ ] Write unit tests for proximity calculation
-- [ ] Write unit tests for models
-- [ ] Write integration tests for API endpoints
+- [ ] Write unit tests for API endpoints
+- [ ] Write integration tests with test database
 - [ ] Achieve 80%+ code coverage
 - [ ] Run: `pytest tests/ -v --cov`
-- [ ] All tests passing ✓
-- **Commit**: "test: add unit and integration tests"
 - **Status**: ⏳ Not Started
 
 ### 2.3 Frontend Features
-- [ ] Create screens:
-  - [x] HomeScreen - main dashboard
-  - [x] MapScreen - map with alarm points
-  - [x] AlarmDetailScreen - individual alarm details
-  - [x] SettingsScreen - app settings
-- [ ] Implement location tracking service
-- [ ] Add map integration (react-native-maps)
-- [ ] Create alarm notification system
+- [x] HomeScreen — main dashboard with backend health status
+- [x] MapScreen — interactive Leaflet/OpenStreetMap on Expo Web
+  - [x] Tap to set alarm point
+  - [x] Adjustable radius (± 100m buttons)
+  - [x] User position marker (green dot)
+  - [x] Proximity detection (Haversine client-side)
+  - [x] Visual radius circle on map
+  - [x] Start/Stop monitoring (browser geolocation)
+- [x] SettingsScreen — alarm preferences
+  - [x] Alarm mode: notification / sound / both
+  - [x] Sound choice: beep / siren / chime
+  - [x] Volume control (20%–100%)
+  - [x] Test alarm button
+- [x] AlarmDetailScreen — placeholder
+- [x] Alarm trigger system
+  - [x] Web Audio API sound synthesis
+  - [x] Browser Notification API
+  - [x] Cooldown to prevent spam
+  - [x] Preferences stored in localStorage
+- [ ] Save multiple alarm zones (frontend CRUD)
+- [ ] Alarm history display
 - **Status**: 🚧 In Progress
 
 ### 2.4 Frontend Testing
-- [ ] Write unit tests for components
 - [ ] Write unit tests for services
-- [ ] Write E2E tests with Detox (at least 3 scenarios)
+- [ ] Write unit tests for components
 - [ ] Run: `npm test`
-- [ ] All tests passing ✓
-- **Commit**: "test: add frontend unit and E2E tests"
 - **Status**: ⏳ Not Started
 
 ### 2.5 API Integration
-- [x] Connect frontend to backend API
-- [x] Test API calls work from app
-- [x] Add error handling for network failures
-- [ ] Test with mock data
-- **Commit**: "feat: integrate frontend with backend API"
+- [x] Frontend calls backend `/health` endpoint
+- [x] CORS configured between frontend and backend
+- [ ] Frontend CRUD for alarm zones via backend API
+- [ ] Error handling for network failures
 - **Status**: 🚧 In Progress
 
-### 2.6 Development Commits
-- [ ] At least 5-10 commits with clear messages
-- [ ] Each commit represents a logical change
-- [ ] All commits follow conventional commits format
-- **Status**: ⏳ Not Started
-
-**Phase 2 Complete?** ⏳ Not Started → 🟢 Complete
+**Phase 2 Complete?** 🚧 In Progress
 
 ---
 
-## PHASE 3: CI/CD & DevOps (1-2 weeks)
+## PHASE 3: CI/CD & DevOps (upcoming)
 
 ### 3.1 GitHub Actions CI Pipeline
 - [ ] Create `.github/workflows/ci-backend.yml`
-  - [ ] Runs on push to main and PRs
-  - [ ] Tests pass before merge
-  - [ ] Linting passes (flake8, mypy)
-  - [ ] Build Docker image
 - [ ] Create `.github/workflows/ci-frontend.yml`
-  - [ ] Runs ESLint, TypeScript checks
-  - [ ] All tests pass
-  - [ ] Build succeeds
-- [ ] Test: Create PR → see workflows run
+- [ ] Tests run on push to main and PRs
+- [ ] Linting passes
 - **Status**: ⏳ Not Started
 
 ### 3.2 Infrastructure as Code
-- [ ] Create `infra/bicep/main.bicep`
-- [ ] Create `infra/bicep/network.bicep`
-- [ ] Create `infra/bicep/database.bicep`
-- [ ] Create `infra/bicep/container-apps.bicep`
-- [ ] Create `infra/bicep/monitoring.bicep`
-- [ ] Test Bicep validation: `az bicep validate`
-- **Commit**: "infra: add Bicep infrastructure templates"
+- [ ] Create Bicep templates for Azure resources
+- [ ] Test Bicep validation
 - **Status**: ⏳ Not Started
 
 ### 3.3 Deployment Workflows
-- [ ] Create `.github/workflows/deploy-staging.yml`
-  - [ ] Deploys on push to main (automatically)
-  - [ ] Runs to Azure Container Apps
-  - [ ] Includes smoke tests
-- [ ] Create `.github/workflows/deploy-production.yml`
-  - [ ] Manual approval before deployment
-  - [ ] Uses workflow_dispatch
-  - [ ] Health checks after deploy
-- [ ] Test: Push commit → auto-deploy to staging
+- [ ] Deploy to staging on push to main
+- [ ] Manual approval for production
 - **Status**: ⏳ Not Started
 
-### 3.4 Environment Management
-- [ ] Create 3 environments in GitHub:
-  - [ ] development (auto-deploy)
-  - [ ] staging (auto-deploy)
-  - [ ] production (manual approval)
-- [ ] Add environment secrets to each
-- [ ] Test: PR merges flow to staging
+### 3.4 Monitoring & Observability
+- [ ] Add Application Insights to backend
+- [ ] Structured logging
+- [ ] Azure dashboards
 - **Status**: ⏳ Not Started
 
-### 3.5 Monitoring & Observability
-- [ ] Add Application Insights SDK to backend
-- [ ] Configure structured JSON logging
-- [ ] Create diagnostics in frontend
-- [ ] Set up Azure dashboards
-- [ ] Create alerts for CPU, memory, errors
-- [ ] Test: View telemetry in Application Insights
+### 3.5 Security Scanning
+- [ ] Trivy container scanning
+- [ ] `npm audit` and `pip audit`
 - **Status**: ⏳ Not Started
 
-### 3.6 Security Scanning
-- [ ] Create security scan workflow
-- [ ] Add Trivy container scanning
-- [ ] Add `npm audit` and `pip audit`
-- [ ] Add SonarQube/Snyk (optional)
-- [ ] Fix any critical vulnerabilities
-- **Commit**: "ci: add security scanning to pipeline"
-- **Status**: ⏳ Not Started
-
-**Phase 3 Complete?** ⏳ Not Started → 🟢 Complete
+**Phase 3 Complete?** ⏳ Not Started
 
 ---
 
-## PHASE 4: Production Ready (1 week)
+## PHASE 4: Production Ready (upcoming)
 
 ### 4.1 Pre-Production Checklist
 - [ ] All tests passing locally and in CI
-- [ ] No security vulnerabilities found
-- [ ] API documentation complete (Swagger)
-- [ ] Architecture documentation written
-- [ ] Performance targets met (response times, throughput)
-- [ ] Load tested (1000+ requests per second)
+- [ ] No security vulnerabilities
+- [ ] API documentation complete
 - **Status**: ⏳ Not Started
 
 ### 4.2 Documentation
-- [ ] [ ] API documentation at `/docs` endpoint
-- [ ] [ ] Architecture diagram (Mermaid or image)
-- [ ] [ ] Deployment runbook created
-- [ ] [ ] Basic incident response guide
-- [ ] [ ] Environment setup guide (DEVELOPMENT.md) ✓
-- [ ] [ ] DevOps learning plan (DEVOPS_LEARNING_PLAN.md) ✓
+- [ ] Architecture diagram
+- [ ] Deployment runbook
+- [ ] Incident response guide
 - **Status**: ⏳ Not Started
 
-### 4.3 Hardening & Final Checks
-- [ ] Security headers added (CORS, CSP, etc.)
-- [ ] Database backups configured
-- [ ] Secrets rotated and secure
-- [ ] Rate limiting implemented
-- [ ] Request validation on all endpoints
-- [ ] Error handling doesn't leak sensitive info
-- **Status**: ⏳ Not Started
-
-### 4.4 Production Deployment
+### 4.3 Production Deployment
 - [ ] Create git tag: `git tag -a v1.0.0`
-- [ ] Manually trigger production deployment
-- [ ] Verify app is live and healthy
-- [ ] Monitor metrics for 24 hours
-- [ ] Document any issues
+- [ ] Deploy to production
+- [ ] Monitor for 24 hours
 - **Status**: ⏳ Not Started
 
-### 4.5 Post-Launch
-- [ ] Monitor Application Insights daily
-- [ ] Set up on-call alerting (optional)
-- [ ] Document learnings
-- [ ] Plan Phase 2 features
-- **Status**: ⏳ Not Started
-
-**Phase 4 Complete?** ⏳ Not Started → 🟢 Complete
+**Phase 4 Complete?** ⏳ Not Started
 
 ---
 
 ## 🚀 Overall Progress
 
 ```
-Phase 1: Setup & Hello World          [░░░░░░░░░░] 0%
-Phase 2: Development & Testing        [░░░░░░░░░░] 0%
-Phase 3: CI/CD & DevOps               [░░░░░░░░░░] 0%
-Phase 4: Production Ready             [░░░░░░░░░░] 0%
+Phase 1: Setup & Hello World          [████████░░] 80%
+Phase 2: Development & Testing        [████░░░░░░] 40%
+Phase 3: CI/CD & DevOps               [░░░░░░░░░░]  0%
+Phase 4: Production Ready             [░░░░░░░░░░]  0%
 ─────────────────────────────────────────────────
-Total Progress:                        [░░░░░░░░░░] 0%
+Total Progress:                        [███░░░░░░░] 30%
 ```
 
 ---
 
-## 📊 Key Metrics to Track
+## 📋 Next Steps (Immediate)
 
-### Development Metrics
-- [ ] Code coverage: ____ % (target: 80%+)
-- [ ] Number of commits: ____ (target: 20+)
-- [ ] API endpoints created: ____ (target: 8+)
-- [ ] Test cases written: ____ (target: 50+)
-
-### DevOps Metrics
-- [ ] CI pipeline pass rate: ____ % (target: 100%)
-- [ ] Deployment success rate: ____ % (target: 100%)
-- [ ] Time to deploy: ____ minutes (target: <5 min)
-- [ ] API response time: ____ ms (target: <200 ms)
-
-### Learning Metrics
-- [ ] Git concepts learned: __/10
-- [ ] Docker concepts learned: __/10
-- [ ] CI/CD concepts learned: __/10
-- [ ] Testing strategies learned: __/10
-- [ ] Azure services learned: __/10
+1. **Save multiple alarm zones** — DB models + CRUD API + frontend integration
+2. **Add simulate mode** — right-click map to place fake position for testing
+3. **Backend tests** — unit tests for Haversine, API endpoint tests
+4. **CI/CD pipeline** — GitHub Actions for lint + test on every push
 
 ---
 
 ## 📝 Notes & Learnings
 
-Use this section to document what you learn:
-
-### Git & Version Control
-- 
-
 ### Docker & Containerization
-- 
+- `docker compose up -d` starts services in background
+- Volume mounts enable hot-reload during development
+- `docker compose up -d --build` rebuilds images before starting
+- `.dockerignore` prevents `node_modules` from being copied into images
 
-### CI/CD Pipelines
-- 
+### Frontend (Expo Web)
+- `react-native-maps` does NOT work on Expo Web — use Leaflet + OpenStreetMap instead
+- Leaflet CSS must be injected manually (Metro doesn't handle CSS imports)
+- Leaflet marker icons need explicit URLs (defaults break in bundlers)
+- Browser geolocation requires `localhost` or HTTPS
+- Web Audio API can synthesize alarm sounds without audio files
 
-### Testing Strategies
-- 
-
-### Azure & Cloud Deployment
-- 
+### Backend (FastAPI)
+- CORS middleware must be imported separately: `from fastapi.middleware.cors import CORSMiddleware`
+- Haversine formula calculates great-circle distance between GPS coordinates
+- Global state (`selected_location`) works for prototyping but needs a database for production
 
 ### DevOps Best Practices
 - 

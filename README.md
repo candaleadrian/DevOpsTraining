@@ -1,103 +1,124 @@
-# 📱 Proximity Alarm App - DevOps Learning Project
+# 📱 Proximity Alarm App — DevOps Learning Project
 
-A complete, production-ready mobile application built from zero to deployment—designed as a hands-on DevOps learning experience.
+A hands-on DevOps learning project: build a proximity alarm app from scratch, containerize it, add CI/CD, and deploy to the cloud.
 
-## 🎯 What You'll Build
+## 🎯 What It Does
 
-A **proximity alarm mobile app** that:
-- Tracks user location in real-time
-- Alerts users when they approach saved map points
-- Sends notifications when within a configurable radius
-- Displays alarms on an interactive map
-- Syncs data with a secure backend API
+A **proximity alarm web app** that:
+- Shows an interactive map (Leaflet + OpenStreetMap)
+- Lets you tap to place an alarm point with a configurable radius
+- Tracks your location via browser geolocation
+- Triggers a sound and/or browser notification when you enter the alarm zone
+- Alarm preferences (mode, sound, volume) configurable in Settings
 
-**Technology**: React Native (iOS/Android) + Python FastAPI + Azure + Docker + GitHub Actions
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React Native / Expo (Web), Leaflet, TypeScript |
+| **Backend** | FastAPI (Python 3.11) |
+| **Database** | PostgreSQL 15 |
+| **Containers** | Docker & Docker Compose |
+| **CI/CD** | GitHub Actions (planned) |
+| **Cloud** | Microsoft Azure (planned) |
 
 ## 🚀 Quick Start
 
 ```bash
-# Complete setup in one command
+# One command to set up and run everything
 make first-run
 
-# Or manual setup
+# Or step by step
 make setup
 make up
 ```
 
-Visit: **http://localhost:8000/docs** → see API docs with examples!
+| Service | URL |
+|---------|-----|
+| Frontend (Map) | http://localhost:8081 |
+| Backend API | http://localhost:8000 |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Health Check | http://localhost:8000/health |
 
-## 📚 What You'll Learn
+## 🗺️ Current Features
 
-### DevOps Fundamentals
-✅ **Version Control**: Git workflows, commits, PRs, branching  
-✅ **CI/CD Pipelines**: Automated testing & deployment with GitHub Actions  
-✅ **Infrastructure as Code**: Deploy using Bicep templates  
-✅ **Containerization**: Docker for reproducible environments  
-✅ **Testing**: Unit, integration, E2E, load testing  
-✅ **Monitoring**: Observability with Azure Application Insights  
-✅ **Security**: Secret management, vulnerability scanning  
-✅ **Cloud Deployment**: Multi-environment setup (dev/staging/prod)  
+### Map Screen
+- Interactive OpenStreetMap via Leaflet
+- Tap to set an alarm point (blue marker + radius circle)
+- Adjust radius with ± 100m buttons
+- Start/Stop location monitoring (browser GPS)
+- Visual proximity status ("X m away" or "🔔 ALARM")
 
-### Technology Stack
-- **Frontend**: React Native / Expo
-- **Backend**: FastAPI (Python)
-- **Database**: PostgreSQL
-- **Cloud**: Microsoft Azure
-- **CI/CD**: GitHub Actions
-- **Containers**: Docker & Docker Compose
-- **IaC**: Azure Bicep
-- **Monitoring**: Azure Application Insights
+### Settings Screen
+- **Alarm mode**: Notification only, Sound only, or Both
+- **Sound**: Beep, Siren, or Chime (synthesized via Web Audio API)
+- **Volume**: 20% – 100%
+- Test Alarm button to preview your selection
+
+### Backend API
+- `GET /` — Hello World
+- `GET /health` — Health check
+- `POST /set-location` — Set alarm point + radius
+- `POST /check-location` — Check proximity (Haversine formula)
+- `GET /docs` — Swagger UI
 
 ## 📖 Documentation
 
 | Document | Purpose |
 |----------|---------|
-| **[DEVOPS_LEARNING_PLAN.md](./DEVOPS_LEARNING_PLAN.md)** | Complete 4-phase plan with all steps |
-| **[DEVELOPMENT.md](./DEVELOPMENT.md)** | Quick start & daily workflow guide |
-| **[Makefile](./Makefile)** | Common commands reference |
-| **API Docs** | http://localhost:8000/docs (when running) |
+| [CHECKLIST.md](CHECKLIST.md) | Progress tracker with checkboxes |
+| [DEVOPS_LEARNING_PLAN.md](DEVOPS_LEARNING_PLAN.md) | Full 4-phase learning roadmap |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Setup & daily workflow guide |
+| [Makefile](Makefile) | All available `make` commands |
 
 ## 🏗️ Project Structure
 
 ```
 proximity-alarm-app/
-├── backend/              # Python FastAPI server
-├── frontend/             # React Native app
-├── infra/                # Infrastructure as Code (Bicep)
-├── .github/workflows/    # CI/CD pipelines
-├── docs/                 # Additional documentation
-├── docker-compose.yml    # Local development stack
-├── Makefile              # Common commands
-└── DEVOPS_LEARNING_PLAN.md  # Complete learning guide
+├── backend/                # Python FastAPI server
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── src/main.py         # API endpoints + Haversine logic
+├── frontend/               # Expo React Native app (Web)
+│   ├── Dockerfile
+│   ├── src/
+│   │   ├── screens/        # MapScreen, HomeScreen, SettingsScreen
+│   │   ├── services/       # alarmTrigger, alarmPreferences, locationService
+│   │   ├── navigation/     # Tab + stack navigation
+│   │   └── ui/             # Shared layout components
+│   └── app.json
+├── docker-compose.yml      # PostgreSQL + backend + frontend
+├── Makefile                # Dev commands
+└── *.md                    # Documentation
 ```
 
-## 🎓 4-Phase Learning Roadmap
+## 📋 Roadmap
 
-### Phase 1: Setup & Hello World (1-2 weeks)
-- Local environment setup
-- Create Hello World backend & frontend
-- Run in Docker
-- First git commits
-- Push to GitHub
+### ✅ Done
+- [x] Hello World backend + frontend in Docker
+- [x] Interactive map (Leaflet/OpenStreetMap)
+- [x] Proximity detection (Haversine)
+- [x] Alarm trigger (sound + notification)
+- [x] User preferences (Settings screen)
 
-### Phase 2: Development & Testing (2-3 weeks)
-- Build proximity alarm features
-- Write unit tests, integration tests, E2E tests
-- Database models and migrations
-- API endpoints for alarm management
+### 🔜 Next Steps
+1. **Save multiple alarm zones** — CRUD API + PostgreSQL persistence
+2. **Simulate mode** — right-click map to fake GPS position for testing
+3. **Backend tests** — pytest for Haversine + API endpoints
+4. **CI/CD pipeline** — GitHub Actions (lint, test, build on every push)
+5. **Alarm history** — log every alarm event with timestamp
+6. **User authentication** — login/register with JWT
+7. **Azure deployment** — Bicep IaC + Container Apps
+8. **Monitoring** — Application Insights + Grafana dashboard
 
-### Phase 3: CI/CD & DevOps (1-2 weeks)
-- GitHub Actions CI pipelines
-- Automated testing on every commit
-- Infrastructure as Code (Bicep)
-- Deploy to Azure Container Apps
-- Multi-environment setup (dev/staging/prod)
+## 🎓 Learning Phases
 
-### Phase 4: Production Ready (1 week)
-- Security scanning & hardening
-- Monitoring & observability setup
-- Performance testing
-- Documentation & runbooks
+| Phase | Focus | Status |
+|-------|-------|--------|
+| 1. Setup & Hello World | Docker, Git, project scaffolding | ✅ ~80% |
+| 2. Development & Testing | Features, tests, DB integration | 🚧 ~40% |
+| 3. CI/CD & DevOps | GitHub Actions, IaC, deployment | ⏳ Not started |
+| 4. Production Ready | Security, monitoring, go-live | ⏳ Not started |
 - Go live! 🚀
 
 ## 🛠️ Common Commands

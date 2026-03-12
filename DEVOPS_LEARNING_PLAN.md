@@ -3,14 +3,14 @@
 **Goal**: Build a production-ready React Native + Python/FastAPI mobile app with enterprise-grade DevOps practices, from Hello World to committed code reflected in live app.
 
 **Stack**: 
-- **Frontend**: React Native (iOS/Android)
+- **Frontend**: React Native (Expo Web) with Leaflet + OpenStreetMap
 - **Backend**: Python/FastAPI
-- **Infrastructure**: Azure (Container Apps, PostgreSQL, Azure Blob Storage)
-- **CI/CD**: GitHub + GitHub Actions
-- **Containerization**: Docker
-- **Observability**: Azure Application Insights + ELK Stack
-- **Database**: PostgreSQL
-- **Version Control**: Git/GitHub with trunk-based development
+- **Infrastructure**: Azure (Container Apps, PostgreSQL) — planned
+- **CI/CD**: GitHub + GitHub Actions — planned
+- **Containerization**: Docker + Docker Compose
+- **Observability**: Azure Application Insights — planned
+- **Database**: PostgreSQL 15 (running, not yet used for persistence)
+- **Version Control**: Git/GitHub
 
 ---
 
@@ -33,116 +33,61 @@ Goal: Establish foundation, learn tools, create "Hello World" app that commits a
 ### 1.1 Prerequisites & Local Environment Setup
 
 #### Install Required Tools
-- [ ] **Git**: `git --version` (or `brew install git`)
-- [ ] **Docker Desktop**: https://www.docker.com/products/docker-desktop
-- [ ] **Node.js 18+**: `node -v && npm -v`
-- [ ] **Python 3.11+**: `python --version && pip --version`
-- [ ] **Azure CLI**: `brew install azure-cli` or https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
-- [ ] **GitHub CLI**: `gh --version` (or `brew install gh`)
-- [ ] **VS Code** + Extensions:
-  - ES7+ React/Redux/React-Native snippets
-  - Python
-  - Docker
-  - Azure Tools
-  - REST Client (for API testing)
-  - GitLens
+- [x] **Git**: `git --version`
+- [x] **Docker Desktop**: `docker --version`
+- [x] **Node.js 20+**: `node -v && npm -v` (runs in Docker)
+- [x] **Python 3.11+**: `python --version` (runs in Docker)
+- [ ] **Azure CLI**: `az --version` (not yet needed)
+- [ ] **GitHub CLI**: `gh --version` (not yet needed)
+- [x] **VS Code** + Extensions
 
-#### Azure Setup
+#### Azure Setup (Future — Phase 3/4)
 - [ ] Create Azure account (free tier)
 - [ ] Create Resource Group: `devops-learning-rg`
-- [ ] Create Container Registry: `devopslearningacr.azurecr.io`
+- [ ] Create Container Registry
 - [ ] Create PostgreSQL server (flexible server)
-- [ ] Create Storage Account for app config/backups
 - [ ] Create Application Insights instance
-- [ ] Install `az` CLI: `az login`
 
 #### GitHub Setup
-- [ ] Create GitHub repo: `proximity-alarm-app`
-- [ ] Clone locally: `git clone https://github.com/yourusername/proximity-alarm-app.git`
-- [ ] Create GitHub organization or use personal repo
+- [x] Create GitHub repo
 - [ ] Set up branch protection rules (main branch)
 - [ ] Create environments: `development`, `staging`, `production`
 - [ ] Set up GitHub Secrets for Azure credentials
 
-### 1.2 Repository Structure
+### 1.2 Repository Structure (Current)
 
 ```
 proximity-alarm-app/
-├── .github/
-│   ├── workflows/
-│   │   ├── ci-backend.yml          # Backend tests & build
-│   │   ├── ci-frontend.yml         # Frontend tests & build
-│   │   ├── deploy-staging.yml      # Deploy to staging
-│   │   └── deploy-production.yml   # Deploy to production
-│   └── pull_request_template.md    # PR template
 ├── backend/
 │   ├── Dockerfile
-│   ├── docker-compose.yml
 │   ├── requirements.txt
-│   ├── .env.example
-│   ├── src/
-│   │   ├── main.py                 # FastAPI app entry
-│   │   ├── config.py               # Configuration
-│   │   ├── models/                 # Database models
-│   │   ├── routers/                # API endpoints
-│   │   │   ├── health.py           # Health check endpoint
-│   │   │   ├── alarm_points.py     # Alarm management
-│   │   │   └── notifications.py    # Notification service
-│   │   ├── services/               # Business logic
-│   │   ├── db/                     # Database layer
-│   │   └── utils/                  # Utilities
-│   ├── tests/
-│   │   ├── unit/                   # Unit tests
-│   │   ├── integration/            # Integration tests
-│   │   └── e2e/                    # End-to-end tests
-│   └── scripts/
-│       ├── init_db.py              # Database initialization
-│       └── seed_data.py            # Test data
+│   └── src/
+│       └── main.py                 # FastAPI app (all endpoints here for now)
 ├── frontend/
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── .env.example
-│   ├── babel.config.js
-│   ├── metro.config.js
 │   ├── app.json
-│   ├── src/
-│   │   ├── App.tsx                 # Main app component
-│   │   ├── screens/                # Screen components
-│   │   │   ├── HomeScreen.tsx
-│   │   │   ├── MapScreen.tsx
-│   │   │   └── SettingsScreen.tsx
-│   │   ├── components/             # Reusable components
-│   │   ├── services/               # API calls, location services
-│   │   ├── state/                  # Redux state management
-│   │   ├── navigation/             # Navigation config
-│   │   └── utils/                  # Utilities
-│   ├── tests/
-│   │   ├── unit/                   # Unit tests (Jest)
-│   │   └── e2e/                    # E2E tests (Detox)
-│   └── android/ & ios/             # Native code
-├── infra/
-│   ├── bicep/                      # Infrastructure as Code
-│   │   ├── main.bicep              # Main deployment
-│   │   ├── network.bicep
-│   │   ├── database.bicep
-│   │   ├── container-apps.bicep
-│   │   └── monitoring.bicep
-│   ├── terraform/                  # Alternative to Bicep (optional)
-│   ├── k8s/                        # Kubernetes manifests (future)
-│   └── scripts/
-│       ├── deploy.sh
-│       └── scale.sh
-├── docs/
-│   ├── ARCHITECTURE.md             # System design
-│   ├── DEVELOPMENT.md              # Setup instructions
-│   ├── TESTING.md                  # Testing strategy
-│   ├── DEVOPS_GUIDE.md             # DevOps processes
-│   ├── API.md                      # API documentation
-│   └── DEPLOYMENT.md               # Deployment procedures
-├── docker-compose.yml              # Local dev environment
+│   └── src/
+│       ├── navigation/
+│       │   └── AppNavigator.tsx    # Bottom tabs + stack navigator
+│       ├── screens/
+│       │   ├── HomeScreen.tsx
+│       │   ├── MapScreen.tsx       # Leaflet map with proximity detection
+│       │   ├── SettingsScreen.tsx   # Alarm preferences
+│       │   └── AlarmDetailScreen.tsx
+│       ├── services/
+│       │   ├── locationService.js  # API calls to backend
+│       │   ├── alarmPreferences.ts # localStorage preference store
+│       │   ├── alarmTrigger.ts     # Web Audio + Notification API
+│       │   └── health.ts          # Health check service
+│       ├── ui/                     # Reusable layout primitives
+│       ├── config/                 # Theme, constants
+│       └── hooks/                  # Custom hooks
+├── docker-compose.yml              # 3 services: postgres, backend, frontend
 ├── Makefile                        # Common commands
-├── DEVOPS_LEARNING_PLAN.md        # This file
-├── CHANGELOG.md
+├── DEVOPS_LEARNING_PLAN.md         # This file
+├── DEVELOPMENT.md                  # Development guide
+├── CHECKLIST.md                    # Progress checklist
 └── README.md
 ```
 
@@ -407,299 +352,74 @@ Goal: Build proximity alarm feature with comprehensive testing.
 
 ### 2.1 Backend Development
 
-#### 2.1.1 Database Setup
+#### Status: Partially Complete
 
-**File: `backend/src/models/alarm.py`**
-```python
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+**Done:**
+- [x] FastAPI app with CORS middleware
+- [x] Haversine distance calculation (`calculate_distance`)
+- [x] `POST /set-location` — set alarm point (lat, lng, radius)
+- [x] `POST /check-location` — check proximity, returns `{alarm: bool, distance: float}`
+- [x] `GET /health` — health check
+- [x] Pydantic models for request validation (`LocationData`, `UserLocation`)
 
-Base = declarative_base()
+**TODO:**
+- [ ] Database models for alarm zones (AlarmPoint table with SQLAlchemy)
+- [ ] Database connection layer (get_db session dependency)
+- [ ] CRUD API endpoints: `POST /api/alarms`, `GET /api/alarms`, `DELETE /api/alarms/{id}`
+- [ ] Replace in-memory `selected_location` global with database persistence
+- [ ] Alembic migrations
+- [ ] Unit tests with pytest
+- [ ] Integration tests with TestClient
 
-class AlarmPoint(Base):
-    __tablename__ = "alarm_points"
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
-    radius_meters = Column(Integer, default=100)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-```
+#### Backend Tests (Planned)
 
-#### 2.1.2 API Endpoints
+```bash
+# Unit tests
+pytest backend/tests/unit/ -v
 
-**File: `backend/src/routers/alarm_points.py`**
-```python
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from src.models.alarm import AlarmPoint
-from src.db.database import get_db
-
-router = APIRouter(prefix="/api/alarms", tags=["alarms"])
-
-@router.post("/points", response_model=dict)
-async def create_alarm_point(
-    name: str,
-    latitude: float,
-    longitude: float,
-    radius_meters: int = 100,
-    db: Session = Depends(get_db)
-):
-    alarm = AlarmPoint(
-        name=name,
-        latitude=latitude,
-        longitude=longitude,
-        radius_meters=radius_meters
-    )
-    db.add(alarm)
-    db.commit()
-    return {"id": alarm.id, "name": alarm.name}
-
-@router.get("/points")
-async def list_alarm_points(db: Session = Depends(get_db)):
-    return db.query(AlarmPoint).filter(AlarmPoint.is_active).all()
-
-@router.get("/points/{point_id}")
-async def get_alarm_point(point_id: int, db: Session = Depends(get_db)):
-    alarm = db.query(AlarmPoint).filter(AlarmPoint.id == point_id).first()
-    if not alarm:
-        raise HTTPException(status_code=404, detail="Alarm point not found")
-    return alarm
-```
-
-#### 2.1.3 Backend Unit Tests
-
-**File: `backend/tests/unit/test_alarm_points.py`**
-```python
-import pytest
-from src.models.alarm import AlarmPoint
-
-def test_create_alarm_point():
-    alarm = AlarmPoint(
-        name="Home",
-        latitude=40.7128,
-        longitude=-74.0060,
-        radius_meters=200
-    )
-    assert alarm.name == "Home"
-    assert alarm.radius_meters == 200
-
-def test_calculate_distance():
-    """Test proximity calculation"""
-    # Haversine formula test
-    lat1, lon1 = 40.7128, -74.0060  # NYC
-    lat2, lon2 = 40.7580, -73.9855  # Central Park
-    
-    # Should be ~4.4 km
-    assert distance_between_points(lat1, lon1, lat2, lon2) > 4000
-```
-
-**Run tests**: `pytest backend/tests/unit/ -v`
-
-#### 2.1.4 Backend Integration Tests
-
-**File: `backend/tests/integration/test_api.py`**
-```python
-import pytest
-from fastapi.testclient import TestClient
-from src.main import app
-
-client = TestClient(app)
-
-def test_health_endpoint():
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
-
-def test_create_alarm_via_api():
-    response = client.post(
-        "/api/alarms/points",
-        json={
-            "name": "Test Location",
-            "latitude": 40.7128,
-            "longitude": -74.0060,
-            "radius_meters": 150
-        }
-    )
-    assert response.status_code == 200
-    assert response.json()["name"] == "Test Location"
+# Integration tests
+pytest backend/tests/integration/ -v
 ```
 
 ### 2.2 Frontend Development
 
-#### 2.2.1 Geolocation Service
+#### Status: Core Features Complete
 
-**File: `frontend/src/services/LocationService.ts`**
-```typescript
-import * as Location from 'expo-location';
+**Done:**
+- [x] Expo Web app running in Docker (port 8081)
+- [x] Bottom tab navigation (Home, Map, Settings)
+- [x] Interactive Leaflet map with OpenStreetMap tiles
+- [x] Tap to set alarm point + blue radius circle
+- [x] Radius adjustment (± 100m buttons)
+- [x] Browser geolocation (Start/Stop monitoring)
+- [x] Client-side Haversine proximity detection
+- [x] Alarm trigger system: Web Audio API (beep/siren/chime) + Browser Notification API
+- [x] Alarm preferences UI (mode, sound, volume) with localStorage persistence
+- [x] Test alarm button in Settings
 
-export class LocationService {
-  async requestPermission() {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    return status === 'granted';
-  }
-
-  async getCurrentLocation() {
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      return location;
-    } catch (error) {
-      console.error('Error getting location:', error);
-      throw error;
-    }
-  }
-
-  calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    // Haversine formula
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-    
-    const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-}
-```
-
-#### 2.2.2 Map Screen Component
-
-**File: `frontend/src/screens/MapScreen.tsx`**
-```typescript
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { LocationService } from '../services/LocationService';
-
-export default function MapScreen() {
-  const [region, setRegion] = useState(null);
-  const [alarmPoints, setAlarmPoints] = useState([]);
-  const locationService = new LocationService();
-
-  useEffect(() => {
-    initializeLocation();
-  }, []);
-
-  const initializeLocation = async () => {
-    const granted = await locationService.requestPermission();
-    if (granted) {
-      const currentLocation = await locationService.getCurrentLocation();
-      setRegion({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      {region && (
-        <MapView style={styles.map} initialRegion={region} />
-      )}
-      <Text style={styles.title}>Proximity Alarm Map</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1 },
-  title: { padding: 10, fontSize: 18, fontWeight: 'bold' },
-});
-```
-
-#### 2.2.3 Frontend Unit Tests
-
-**File: `frontend/tests/unit/LocationService.test.ts`**
-```typescript
-import { LocationService } from '../../src/services/LocationService';
-
-describe('LocationService', () => {
-  const service = new LocationService();
-
-  test('calculateDistance returns correct value', () => {
-    // NYC to Central Park (approximately 4.4 km)
-    const distance = service.calculateDistance(
-      40.7128, -74.0060,  // NYC
-      40.7580, -73.9855   // Central Park
-    );
-    expect(distance).toBeGreaterThan(4000);
-    expect(distance).toBeLessThan(5000);
-  });
-
-  test('distance of same point is zero', () => {
-    const distance = service.calculateDistance(40.7128, -74.0060, 40.7128, -74.0060);
-    expect(distance).toBeLessThan(1);
-  });
-});
-```
-
-**Run tests**: `npm test`
-
-#### 2.2.4 Frontend E2E Tests (Detox)
-
-**File: `frontend/tests/e2e/app.e2e.test.ts`**
-```typescript
-describe('Proximity Alarm E2E', () => {
-  beforeAll(async () => {
-    await device.launchApp();
-  });
-
-  beforeEach(async () => {
-    await device.reloadReactNative();
-  });
-
-  it('should display home screen', async () => {
-    await expect(element(by.text('Proximity Alarm App'))).toBeVisible();
-  });
-
-  it('should navigate to map screen', async () => {
-    await element(by.id('mapTabButton')).multiTap();
-    await expect(element(by.text('Proximity Alarm Map'))).toBeVisible();
-  });
-});
-```
+**TODO:**
+- [ ] Display saved alarm zones from DB (once backend CRUD exists)
+- [ ] Multiple simultaneous alarm zones
+- [ ] Simulation mode for testing without real GPS
+- [ ] Unit tests with Jest
 
 ### 2.3 Testing Summary
 
-| Test Type | Framework | Coverage | Command |
-|-----------|-----------|----------|---------|
-| Backend Unit | pytest | Services, utils | `pytest backend/tests/unit/ -v` |
-| Backend Integration | TestClient | API endpoints | `pytest backend/tests/integration/ -v` |
-| Frontend Unit | Jest | Components, utils | `npm test` |
-| Frontend Integration | Detox | App flows | `detox test --cleanup` |
-| Load Testing | Locust | Performance | `locust -f tests/load/locustfile.py` |
+| Test Type | Framework | Status | Command |
+|-----------|-----------|--------|---------|
+| Backend Unit | pytest | Planned | `pytest backend/tests/unit/ -v` |
+| Backend Integration | TestClient | Planned | `pytest backend/tests/integration/ -v` |
+| Frontend Unit | Jest | Planned | `npm test` |
+| Frontend E2E | Playwright/Cypress | Planned | TBD |
+| Load Testing | Locust | Planned | TBD |
 
-### 2.4 Development Commits
-```bash
-git add backend/src/models/
-git commit -m "feat: database models for alarm points"
+### 2.4 Lessons Learned So Far
 
-git add backend/src/routers/
-git commit -m "feat: API endpoints for alarm point management"
-
-git add backend/tests/
-git commit -m "test: add unit and integration tests for backend"
-
-git add frontend/src/services/
-git commit -m "feat: geolocation and proximity calculation services"
-
-git add frontend/src/screens/
-git commit -m "feat: map screen with location tracking"
-
-git add frontend/tests/
-git commit -m "test: unit and e2e tests for frontend"
-```
+- **react-native-maps doesn't work on Expo Web** — switched to Leaflet + OpenStreetMap
+- **Two files with same screen name** caused confusion — keep one canonical export per screen
+- **CORSMiddleware must be explicitly imported** from `fastapi.middleware.cors`
+- **Browser geolocation requires localhost or HTTPS** — Docker port-mapping must use localhost
+- **Web Audio API** can synthesize sounds without audio files — beep, siren, chime all generated in code
 
 ---
 
@@ -1169,10 +889,13 @@ gh workflow run deploy-production.yml -f version=v1.0.0
 - **Container**: Docker
 
 ### Frontend
-- **Framework**: React Native (Expo)
-- **Testing**: Jest, Detox
+- **Framework**: React Native (Expo Web)
+- **Map**: Leaflet + OpenStreetMap (NOT react-native-maps — doesn't work on web)
+- **Audio**: Web Audio API (synthesized sounds)
+- **Notifications**: Browser Notification API
+- **State**: localStorage (for alarm preferences)
+- **Testing**: Jest (planned)
 - **Package Manager**: npm
-- **Mapping**: react-native-maps
 
 ### DevOps & Infrastructure
 - **IaC**: Bicep
@@ -1183,12 +906,12 @@ gh workflow run deploy-production.yml -f version=v1.0.0
 - **Monitoring**: Azure Application Insights
 - **Logging**: JSON structured logs
 
-### Testing
+### Testing (Planned)
 - **Unit Tests**: pytest (backend), Jest (frontend)
 - **Integration Tests**: TestClient (backend)
-- **E2E Tests**: Detox (frontend)
+- **E2E Tests**: Playwright or Cypress (web)
 - **Load Testing**: Locust
-- **Security Scanning**: Trivy, Snyk, SonarQube
+- **Security Scanning**: Trivy, Snyk
 
 ---
 
