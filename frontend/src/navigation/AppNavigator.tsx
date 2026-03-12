@@ -44,6 +44,7 @@ function MainTabs() {
           paddingTop: 8,
         },
       }}
+      initialRouteName="Map"
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
       <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
