@@ -88,7 +88,11 @@ uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ### 3. Frontend Development
 
 ```bash
-# Terminal 2: Start frontend
+# Terminal 2: configure frontend API access
+cd frontend
+cp .env.example .env
+
+# Terminal 3: start frontend
 make dev-frontend
 # or
 cd frontend
@@ -101,6 +105,8 @@ The frontend uses Expo. On first run, Expo opens an interactive terminal where y
 - `w` for web
 
 If Expo reports engine issues, check your Node version first. This frontend currently expects Node 20+.
+
+The first frontend/backend integration uses `EXPO_PUBLIC_API_BASE_URL` from `frontend/.env`. On web, `http://localhost:8000` works when the backend is running locally. On a real phone or emulator, `localhost` usually points to the device itself, so you will need to use your machine IP instead.
 
 ### Current Frontend Structure
 

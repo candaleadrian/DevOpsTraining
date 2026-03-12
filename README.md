@@ -203,7 +203,14 @@ The mobile app now uses Expo with TypeScript for the initial React Native setup.
    ```
    This keeps the API available while you work on the mobile app.
 
-2. **Start the frontend dev server**
+2. **Set the frontend API base URL**
+   ```bash
+   cd frontend
+   cp .env.example .env
+   ```
+   `EXPO_PUBLIC_API_BASE_URL` tells the mobile app where the FastAPI server lives. For web on the same machine, `http://localhost:8000` is correct.
+
+3. **Start the frontend dev server**
    ```bash
    cd frontend
    npm start
@@ -213,14 +220,15 @@ The mobile app now uses Expo with TypeScript for the initial React Native setup.
    make dev-frontend
    ```
 
-3. **Choose a target platform**
+4. **Choose a target platform**
    - Press `a` in the Expo terminal for Android.
    - Press `i` for iOS on macOS.
    - Press `w` to open the web build in the browser.
 
-4. **Verify the app**
-   - You should see a simple "Frontend Hello World" screen for Proximity Alarm.
-   - This confirms that the React Native project, TypeScript setup, and Expo runtime are all working.
+5. **Verify the app**
+   - The Home screen now performs a backend health check.
+   - If the backend is running, you should see the status resolve to `healthy`.
+   - If it fails, the screen surfaces the error so you can debug configuration or networking first.
 
 ### What this step gives you
 - A real frontend project under `frontend/`

@@ -111,12 +111,12 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - **Status**: ⏳ Not Started
 
 ### 2.5 API Integration
-- [ ] Connect frontend to backend API
-- [ ] Test API calls work from app
-- [ ] Add error handling for network failures
+- [x] Connect frontend to backend API
+- [x] Test API calls work from app
+- [x] Add error handling for network failures
 - [ ] Test with mock data
 - **Commit**: "feat: integrate frontend with backend API"
-- **Status**: ⏳ Not Started
+- **Status**: 🚧 In Progress
 
 ### 2.6 Development Commits
 - [ ] At least 5-10 commits with clear messages
