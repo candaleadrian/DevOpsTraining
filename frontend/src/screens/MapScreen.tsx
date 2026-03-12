@@ -1,8 +1,32 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, ScrollView, TextInput, Animated } from 'react-native';
 import { fireAlarm, stopAlarm } from '../services/alarmTrigger';
 import { zonesApi, AlarmZone } from '../services/zonesApi';
 import { historyApi } from '../services/historyApi';
+
+// Toast component for showing feedback
+function Toast({ message, type, onDone }: { message: string; type: 'success' | 'error'; onDone: () => void }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => onDone());
+  }, []);
+  return (
+    <Animated.View style={[toastStyles.container, type === 'error' ? toastStyles.error : toastStyles.success, { opacity }]}>
+      <Text style={toastStyles.text}>{type === 'success' ? '✓' : '✕'} {message}</Text>
+    </Animated.View>
+  );
+}
+
+const toastStyles = StyleSheet.create({
+  container: { position: 'absolute', top: 12, left: 20, right: 20, padding: 12, borderRadius: 10, zIndex: 999, alignItems: 'center' },
+  success: { backgroundColor: '#166534' },
+  error: { backgroundColor: '#991b1b' },
+  text: { color: '#fff', fontWeight: '700', fontSize: 14 },
+});
 
 // Leaflet CSS is injected once into the page head
 function useLeafletCSS() {
@@ -58,6 +82,15 @@ export function MapScreen() {
 
   // Track which zones we've already fired alarms for
   const firedAlarmsRef = useRef<Set<number>>(new Set());
+
+  // Toast feedback
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+  }, []);
+
+  // Pending delete confirmation
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   // ---- Load saved zones on mount -----------------------------------------
   const loadZones = useCallback(async () => {
@@ -239,7 +272,7 @@ export function MapScreen() {
           distance_meters: r.distance,
           latitude: userPos.lat,
           longitude: userPos.lng,
-        }).catch((e) => console.error('Failed to log alarm event:', e));
+        }).catch((e: unknown) => console.error('Failed to log alarm event:', e));
       }
     }
 
@@ -256,7 +289,7 @@ export function MapScreen() {
           distance_meters: pr?.distance ?? 0,
           latitude: userPos.lat,
           longitude: userPos.lng,
-        }).catch((e) => console.error('Failed to log exit event:', e));
+        }).catch((e: unknown) => console.error('Failed to log exit event:', e));
         firedAlarmsRef.current.delete(id);
       }
     }
@@ -280,20 +313,26 @@ export function MapScreen() {
       setPendingName('');
       setPendingRadius(500);
       await loadZones();
+      showToast(`"${name}" added`);
     } catch (e) {
       console.error('Failed to save zone:', e);
+      showToast('Failed to save zone', 'error');
     }
-  }, [pendingPoint, pendingName, pendingRadius, zones.length, loadZones]);
+  }, [pendingPoint, pendingName, pendingRadius, zones.length, loadZones, showToast]);
 
   // ---- Delete zone -------------------------------------------------------
   const deleteZone = useCallback(async (id: number) => {
+    const zone = zones.find((z) => z.id === id);
     try {
       await zonesApi.remove(id);
+      setConfirmDeleteId(null);
       await loadZones();
+      showToast(`"${zone?.name ?? 'Zone'}" removed`);
     } catch (e) {
       console.error('Failed to delete zone:', e);
+      showToast('Failed to delete zone', 'error');
     }
-  }, [loadZones]);
+  }, [loadZones, zones, showToast]);
 
   // ---- Start / stop live tracking ----------------------------------------
   const toggleMonitoring = useCallback(() => {
@@ -326,6 +365,9 @@ export function MapScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Toast */}
+      {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
+
       {/* Map */}
       <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0 }} />
 
@@ -381,9 +423,10 @@ export function MapScreen() {
         {zones.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Saved Zones ({zones.length})</Text>
-            <ScrollView style={{ maxHeight: 120 }}>
+            <ScrollView style={{ maxHeight: 150 }}>
               {zones.map((z, i) => {
                 const pr = proximityResults.find((r) => r.zone_id === z.id);
+                const isConfirming = confirmDeleteId === z.id;
                 return (
                   <View key={z.id} style={styles.zoneRow}>
                     <View
@@ -396,9 +439,20 @@ export function MapScreen() {
                       {z.radius_meters}m
                       {pr ? ` · ${Math.round(pr.distance)}m away` : ''}
                     </Text>
-                    <Pressable onPress={() => deleteZone(z.id)}>
-                      <Text style={styles.deleteBtn}>✕</Text>
-                    </Pressable>
+                    {isConfirming ? (
+                      <View style={styles.confirmRow}>
+                        <Pressable onPress={() => deleteZone(z.id)} style={styles.confirmYes}>
+                          <Text style={styles.confirmText}>Delete</Text>
+                        </Pressable>
+                        <Pressable onPress={() => setConfirmDeleteId(null)}>
+                          <Text style={styles.confirmCancel}>Cancel</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Pressable onPress={() => setConfirmDeleteId(z.id)}>
+                        <Text style={styles.deleteBtn}>✕</Text>
+                      </Pressable>
+                    )}
                   </View>
                 );
               })}
@@ -450,4 +504,8 @@ const styles = StyleSheet.create({
   zoneName: { fontWeight: '600', fontSize: 13, color: '#1f2a37', flex: 1 },
   zoneInfo: { fontSize: 12, color: '#7a8793' },
   deleteBtn: { fontSize: 16, color: '#dc2626', paddingHorizontal: 6 },
+  confirmRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  confirmYes: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  confirmText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  confirmCancel: { color: '#7a8793', fontSize: 12, fontWeight: '600' },
 });

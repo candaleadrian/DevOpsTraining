@@ -1,10 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { historyApi, AlarmEvent } from '../services/historyApi';
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString();
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export function HistoryScreen() {
@@ -27,6 +35,13 @@ export function HistoryScreen() {
     loadEvents();
   }, [loadEvents]);
 
+  // Auto-refresh when the tab comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadEvents();
+    }, [loadEvents])
+  );
+
   const clearHistory = useCallback(async () => {
     try {
       await historyApi.clear();
@@ -47,7 +62,14 @@ export function HistoryScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Alarm History</Text>
+        <View>
+          <Text style={styles.title}>Alarm History</Text>
+          {events.length > 0 && (
+            <Text style={styles.subtitle}>
+              {events.filter((e) => e.event_type === 'entered').length} entries · {events.filter((e) => e.event_type === 'exited').length} exits
+            </Text>
+          )}
+        </View>
         {events.length > 0 && (
           <Pressable style={styles.clearBtn} onPress={clearHistory}>
             <Text style={styles.clearBtnText}>Clear All</Text>
@@ -100,6 +122,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   title: { fontSize: 20, fontWeight: '700', color: '#1f2a37' },
+  subtitle: { fontSize: 12, color: '#7a8793', marginTop: 2 },
   clearBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#dc2626' },
   clearBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   emptyText: { fontSize: 16, fontWeight: '600', color: '#1f2a37', marginBottom: 6 },
