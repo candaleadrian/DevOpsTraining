@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { fireAlarm, stopAlarm } from '../services/alarmTrigger';
 
 // Leaflet CSS is injected once into the page head (Expo Web / Metro doesn't handle CSS imports)
 function useLeafletCSS() {
@@ -145,15 +146,26 @@ export function MapScreen() {
   }, [userPos]);
 
   // ---- Check proximity whenever user position or alarm point changes ------
+  const wasInsideRef = useRef(false);
   useEffect(() => {
     if (!userPos || !selectedPoint) {
       setAlarm(false);
       setDistance(null);
+      wasInsideRef.current = false;
       return;
     }
     const d = haversineMetres(userPos.lat, userPos.lng, selectedPoint.lat, selectedPoint.lng);
     setDistance(d);
-    setAlarm(d <= radius);
+    const inside = d <= radius;
+    setAlarm(inside);
+
+    if (inside && !wasInsideRef.current) {
+      // Just entered the radius — fire alarm
+      fireAlarm(d, radius);
+    } else if (!inside && wasInsideRef.current) {
+      stopAlarm();
+    }
+    wasInsideRef.current = inside;
   }, [userPos, selectedPoint, radius]);
 
   // ---- Start / stop live tracking ----------------------------------------
