@@ -1,6 +1,7 @@
 export type MainTabParamList = {
   Home: undefined;
   Map: undefined;
+  History: undefined;
   Settings: undefined;
 };
 

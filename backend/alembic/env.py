@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.db.database import DATABASE_URL, Base
 from src.models.alarm_zone import AlarmZone  # noqa: F401  — registers model metadata
+from src.models.alarm_event import AlarmEvent  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)

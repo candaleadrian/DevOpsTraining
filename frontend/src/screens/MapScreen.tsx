@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, ScrollView, TextInput } from 'react-native';
 import { fireAlarm, stopAlarm } from '../services/alarmTrigger';
 import { zonesApi, AlarmZone } from '../services/zonesApi';
+import { historyApi } from '../services/historyApi';
 
 // Leaflet CSS is injected once into the page head
 function useLeafletCSS() {
@@ -230,12 +231,32 @@ export function MapScreen() {
       if (!firedAlarmsRef.current.has(r.zone_id)) {
         fireAlarm(r.distance, zones.find((z) => z.id === r.zone_id)?.radius_meters ?? 500);
         firedAlarmsRef.current.add(r.zone_id);
+        // Log "entered" event
+        historyApi.create({
+          zone_id: r.zone_id,
+          zone_name: r.name,
+          event_type: 'entered',
+          distance_meters: r.distance,
+          latitude: userPos.lat,
+          longitude: userPos.lng,
+        }).catch((e) => console.error('Failed to log alarm event:', e));
       }
     }
 
     // Stop alarm if we left all zones
     for (const id of firedAlarmsRef.current) {
       if (!alarmingIds.has(id)) {
+        // Log "exited" event
+        const zone = zones.find((z) => z.id === id);
+        const pr = results.find((r) => r.zone_id === id);
+        historyApi.create({
+          zone_id: id,
+          zone_name: zone?.name ?? `Zone ${id}`,
+          event_type: 'exited',
+          distance_meters: pr?.distance ?? 0,
+          latitude: userPos.lat,
+          longitude: userPos.lng,
+        }).catch((e) => console.error('Failed to log exit event:', e));
         firedAlarmsRef.current.delete(id);
       }
     }

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from src.db.database import engine, get_db, Base
 from src.models.alarm_zone import AlarmZone
+from src.models.alarm_event import AlarmEvent
 
 app = FastAPI(title="Proximity Alarm API", version="0.2.0")
 
@@ -54,6 +55,29 @@ class AlarmZoneOut(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AlarmEventCreate(BaseModel):
+    zone_id: int
+    zone_name: str = Field(..., min_length=1, max_length=255)
+    event_type: str = Field(..., pattern=r'^(entered|exited)$')
+    distance_meters: float = Field(..., ge=0)
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+
+
+class AlarmEventOut(BaseModel):
+    id: int
+    zone_id: Optional[int]
+    zone_name: str
+    event_type: str
+    distance_meters: float
+    latitude: float
+    longitude: float
+    triggered_at: datetime
 
     class Config:
         from_attributes = True
@@ -153,6 +177,44 @@ def check_zones(user_location: UserLocation, db: Session = Depends(get_db)):
             "alarm": d <= z.radius_meters,
         })
     return results
+
+
+# ---------------------------------------------------------------------------
+# Alarm Events (history log)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/alarm-events", response_model=AlarmEventOut, status_code=201)
+def create_alarm_event(event: AlarmEventCreate, db: Session = Depends(get_db)):
+    db_event = AlarmEvent(
+        zone_id=event.zone_id,
+        zone_name=event.zone_name,
+        event_type=event.event_type,
+        distance_meters=event.distance_meters,
+        latitude=event.latitude,
+        longitude=event.longitude,
+    )
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+
+@app.get("/api/alarm-events", response_model=List[AlarmEventOut])
+def list_alarm_events(
+    zone_id: Optional[int] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    q = db.query(AlarmEvent)
+    if zone_id is not None:
+        q = q.filter(AlarmEvent.zone_id == zone_id)
+    return q.order_by(AlarmEvent.triggered_at.desc()).limit(min(limit, 500)).all()
+
+
+@app.delete("/api/alarm-events", status_code=204)
+def clear_alarm_events(db: Session = Depends(get_db)):
+    db.query(AlarmEvent).delete()
+    db.commit()
 
 
 # ---------------------------------------------------------------------------
