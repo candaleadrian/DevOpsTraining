@@ -102,6 +102,16 @@ The frontend uses Expo. On first run, Expo opens an interactive terminal where y
 
 If Expo reports engine issues, check your Node version first. This frontend currently expects Node 20+.
 
+### Current Frontend Structure
+
+The frontend now uses a simple but production-minded structure:
+
+- `src/navigation` contains navigators and route types.
+- `src/screens` contains screen-level components.
+- `src/ui` contains reusable layout primitives.
+
+This is the right time to create structure, before API calls, maps, and state management start adding complexity.
+
 ### 4. Request an API
 
 ```bash

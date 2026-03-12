@@ -227,6 +227,18 @@ The mobile app now uses Expo with TypeScript for the initial React Native setup.
 - A repeatable local workflow for mobile development
 - A clean baseline before adding navigation, API integration, and location features
 
+## Frontend Architecture Baseline
+
+The frontend is no longer a single Expo starter screen. It now has the first professional structural layer:
+
+- Bottom-tab navigation for `Home`, `Map`, and `Settings`
+- A stack route for `Alarm Detail`
+- Separate screen files under `frontend/src/screens`
+- Shared layout primitives under `frontend/src/ui`
+- Central navigation wiring under `frontend/src/navigation`
+
+This matters because mobile apps become hard to maintain very quickly if navigation, business logic, and rendering are all mixed in one file.
+
 ## ✅ Success Milestones
 
 - [ ] ✅ Local environment running with `make up`

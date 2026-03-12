@@ -92,14 +92,14 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ### 2.3 Frontend Features
 - [ ] Create screens:
-  - [ ] HomeScreen - main dashboard
-  - [ ] MapScreen - map with alarm points
-  - [ ] AlarmDetailScreen - individual alarm details
-  - [ ] SettingsScreen - app settings
+  - [x] HomeScreen - main dashboard
+  - [x] MapScreen - map with alarm points
+  - [x] AlarmDetailScreen - individual alarm details
+  - [x] SettingsScreen - app settings
 - [ ] Implement location tracking service
 - [ ] Add map integration (react-native-maps)
 - [ ] Create alarm notification system
-- **Status**: ⏳ Not Started
+- **Status**: 🚧 In Progress
 
 ### 2.4 Frontend Testing
 - [ ] Write unit tests for components
