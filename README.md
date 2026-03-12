@@ -182,6 +182,51 @@ To start the backend locally, follow these steps:
      curl http://localhost:8000
      ```
 
+## Running the Frontend Locally
+
+The mobile app now uses Expo with TypeScript for the initial React Native setup.
+
+### Why Expo for this step
+- It gives you a working React Native baseline quickly.
+- It keeps the first mobile milestone focused on app structure rather than native build plumbing.
+- It is a good fit for learning because you can run the app on Android, iOS, or web from the same project.
+
+### Prerequisites
+- Use Node.js 20 LTS or newer. The generated Expo toolchain expects Node 20+.
+- Keep Docker for the backend and PostgreSQL, but run the Expo dev server directly with npm.
+
+### Steps
+
+1. **Start the backend first**
+   ```bash
+   make up
+   ```
+   This keeps the API available while you work on the mobile app.
+
+2. **Start the frontend dev server**
+   ```bash
+   cd frontend
+   npm start
+   ```
+   Or from the project root:
+   ```bash
+   make dev-frontend
+   ```
+
+3. **Choose a target platform**
+   - Press `a` in the Expo terminal for Android.
+   - Press `i` for iOS on macOS.
+   - Press `w` to open the web build in the browser.
+
+4. **Verify the app**
+   - You should see a simple "Frontend Hello World" screen for Proximity Alarm.
+   - This confirms that the React Native project, TypeScript setup, and Expo runtime are all working.
+
+### What this step gives you
+- A real frontend project under `frontend/`
+- A repeatable local workflow for mobile development
+- A clean baseline before adding navigation, API integration, and location features
+
 ## ✅ Success Milestones
 
 - [ ] ✅ Local environment running with `make up`

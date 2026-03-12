@@ -8,7 +8,7 @@ Before starting, ensure you have installed:
 - **Git**: https://git-scm.com/
 - **Docker Desktop**: https://www.docker.com/products/docker-desktop
 - **Python 3.11+**: https://www.python.org/downloads/
-- **Node.js 18+**: https://nodejs.org/
+- **Node.js 20 LTS+**: https://nodejs.org/
 - **VS Code**: https://code.visualstudio.com/
 
 ### Verify Installation
@@ -95,7 +95,12 @@ cd frontend
 npx expo start
 ```
 
-If the frontend is not scaffolded yet, frontend commands are skipped and you can continue backend-only.
+The frontend uses Expo. On first run, Expo opens an interactive terminal where you choose the target:
+- `a` for Android
+- `i` for iOS on macOS
+- `w` for web
+
+If Expo reports engine issues, check your Node version first. This frontend currently expects Node 20+.
 
 ### 4. Request an API
 

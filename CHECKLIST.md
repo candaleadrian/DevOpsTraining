@@ -46,13 +46,13 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - **Status**: ⏳ Not Started
 
 ### 1.5 Frontend Hello World
-- [ ] Initialize React Native project with Expo
-- [ ] Create Hello World screen
+- [x] Initialize React Native project with Expo
+- [x] Create Hello World screen
 - [ ] Create `Dockerfile` for frontend
 - [ ] Update docker-compose for frontend
 - [ ] Test: Frontend hot-reload works
 - [ ] Commit: "feat: initialize React Native hello world app"
-- **Status**: ⏳ Not Started
+- **Status**: 🚧 In Progress
 
 ### 1.6 First Commits & Push
 - [ ] Verify local: `make up` runs successfully
