@@ -10,7 +10,7 @@ help:
 	@echo "  make setup              - Complete local setup"
 	@echo "  make setup-backend      - Setup backend only"
 	@echo "  make setup-frontend     - Setup frontend only"
-	@echo "  make up                 - Start all services (docker-compose)"
+	@echo "  make up                 - Start all services (docker compose)"
 	@echo "  make down               - Stop all services"
 	@echo "  make logs               - Show service logs"
 	@echo "  make test               - Run all tests"
@@ -48,7 +48,7 @@ setup-frontend:
 # Docker compose
 up:
 	@echo "Starting services..."
-	docker-compose up -d
+	docker compose up -d
 	@echo "✓ Services started"
 	@echo "  API: http://localhost:8000"
 	@echo "  API Docs: http://localhost:8000/docs"
@@ -56,17 +56,17 @@ up:
 
 down:
 	@echo "Stopping services..."
-	docker-compose down
+	docker compose down
 	@echo "✓ Services stopped"
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 backend-logs:
-	docker-compose logs -f backend
+	docker compose logs -f backend
 
 frontend-logs:
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 # Testing
 test: test-backend test-frontend
@@ -113,16 +113,16 @@ lint-frontend:
 
 # Database
 psql:
-	docker-compose exec postgres psql -U devops_user -d proximity_alarm
+	docker compose exec postgres psql -U devops_user -d proximity_alarm
 
 db-migrate:
 	@echo "Running database migrations..."
-	docker-compose exec backend python -m alembic upgrade head
+	docker compose exec backend python -m alembic upgrade head
 	@echo "✓ Migrations complete"
 
 db-seed:
 	@echo "Seeding database..."
-	docker-compose exec backend python -m scripts.seed_data
+	docker compose exec backend python -m scripts.seed_data
 	@echo "✓ Database seeded"
 
 # Development
@@ -139,7 +139,7 @@ dev-frontend:
 # Utility
 clean:
 	@echo "Cleaning up..."
-	docker-compose down -v
+	docker compose down -v
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
@@ -148,7 +148,7 @@ clean:
 
 status:
 	@echo "Service Status:"
-	@docker-compose ps || true
+	@docker compose ps || true
 
 # Git helpers
 git-status:
