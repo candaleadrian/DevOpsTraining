@@ -188,7 +188,7 @@ jobs:
   apply:
     name: Apply
     needs: plan
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && needs.plan.result == 'success'
     runs-on: ubuntu-latest
     container:
       image: zenika/terraform-azure-cli:latest
@@ -250,6 +250,7 @@ jobs:
   deploy:
     name: Deploy (Sync State)
     needs: apply
+    if: needs.apply.result == 'success'
     runs-on: ubuntu-latest
     container:
       image: zenika/terraform-azure-cli:latest

@@ -1,0 +1,14 @@
+# Terraform state & local files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# Sensitive variable files
+*.auto.tfvars
+secret.tfvars
+
+# OS files
+.DS_Store
