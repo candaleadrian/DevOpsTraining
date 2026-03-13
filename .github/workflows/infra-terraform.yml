@@ -1,0 +1,374 @@
+name: "Terraform Infrastructure"
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "infra/terraform/**"
+  pull_request:
+    branches: [master]
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  TF_WORKING_DIR: infra/terraform
+  TF_VAR_FILE: environments/dev.tfvars
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  TF_VAR_db_admin_password: ${{ secrets.TF_VAR_DB_ADMIN_PASSWORD }}
+  # State storage
+  TF_STATE_RG: devops-learning-tfstate-rg
+  TF_STATE_ACCOUNT: devopslearningtfstate
+  TF_STATE_CONTAINER: tfstate
+  TF_STATE_KEY: proximity-alarm.tfstate
+  # Container image — pulled once in init, shared via artifact
+  TF_IMAGE: zenika/terraform-azure-cli:latest
+
+jobs:
+  # ── Stage 1: Init ─────────────────────────────────────────
+  # Pulls the Docker image, saves it as artifact, runs terraform init
+  init:
+    name: Init
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pull and save Docker image
+        run: |
+          docker pull ${{ env.TF_IMAGE }}
+          docker save ${{ env.TF_IMAGE }} | gzip > tf-image.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tf-docker-image
+          path: tf-image.tar.gz
+          retention-days: 1
+          compression-level: 0  # already gzipped
+
+      - name: Terraform Init
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            -e ARM_CLIENT_ID \
+            -e ARM_CLIENT_SECRET \
+            -e ARM_SUBSCRIPTION_ID \
+            -e ARM_TENANT_ID \
+            ${{ env.TF_IMAGE }} \
+            terraform init
+
+      - name: Upload init artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-init
+          path: |
+            ${{ env.TF_WORKING_DIR }}/.terraform
+            ${{ env.TF_WORKING_DIR }}/.terraform.lock.hcl
+          retention-days: 1
+
+  # ── Stage 2: Format ────────────────────────────────────────
+  format:
+    name: Format Check
+    needs: init
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-docker-image
+
+      - name: Load Docker image
+        run: docker load -i tf-image.tar.gz
+
+      - name: Terraform Format Check
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            ${{ env.TF_IMAGE }} \
+            terraform fmt -check -recursive -diff
+
+  # ── Stage 3: Validate ─────────────────────────────────────
+  validate:
+    name: Validate
+    needs: init
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-docker-image
+
+      - name: Load Docker image
+        run: docker load -i tf-image.tar.gz
+
+      - name: Download init artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-init
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Validate
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            ${{ env.TF_IMAGE }} \
+            terraform validate
+
+  # ── Stage 4: Plan ──────────────────────────────────────────
+  plan:
+    name: Plan
+    needs: [format, validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-docker-image
+
+      - name: Load Docker image
+        run: docker load -i tf-image.tar.gz
+
+      - name: Download init artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-init
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Plan
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            -e ARM_CLIENT_ID \
+            -e ARM_CLIENT_SECRET \
+            -e ARM_SUBSCRIPTION_ID \
+            -e ARM_TENANT_ID \
+            -e TF_VAR_db_admin_password \
+            ${{ env.TF_IMAGE }} \
+            sh -c "terraform plan \
+              -var-file=${{ env.TF_VAR_FILE }} \
+              -out=tfplan \
+              -no-color 2>&1 | tee plan_output.txt"
+
+      - name: Upload Plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
+          retention-days: 5
+
+      - name: Upload Plan output (readable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-output
+          path: ${{ env.TF_WORKING_DIR }}/plan_output.txt
+          retention-days: 5
+
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          PLAN_OUTPUT=$(cat ${{ env.TF_WORKING_DIR }}/plan_output.txt)
+          MAX_LEN=60000
+          if [ ${#PLAN_OUTPUT} -gt $MAX_LEN ]; then
+            PLAN_OUTPUT="${PLAN_OUTPUT:0:$MAX_LEN}\n\n... (truncated)"
+          fi
+
+          BODY=$(cat <<-EOF
+          ### Terraform Plan 📋
+
+          <details><summary>Show Plan Output</summary>
+
+          \`\`\`
+          ${PLAN_OUTPUT}
+          \`\`\`
+
+          </details>
+
+          *Triggered by @${{ github.actor }} — commit \`${{ github.sha }}\`*
+          EOF
+          )
+
+          curl -s -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            -d "$(jq -n --arg body "$BODY" '{body: $body}')"
+
+  # ── Stage 5: Apply ─────────────────────────────────────────
+  # Runs the saved plan. On failure, uploads the state file to Azure
+  # so it's not lost. On success, proceeds to the deploy stage.
+  apply:
+    name: Apply
+    needs: plan
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-docker-image
+
+      - name: Load Docker image
+        run: docker load -i tf-image.tar.gz
+
+      - name: Download init artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-init
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Download Plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            -e ARM_CLIENT_ID \
+            -e ARM_CLIENT_SECRET \
+            -e ARM_SUBSCRIPTION_ID \
+            -e ARM_TENANT_ID \
+            -e TF_VAR_db_admin_password \
+            ${{ env.TF_IMAGE }} \
+            terraform apply -auto-approve tfplan
+
+      - name: Save state file on failure
+        if: failure()
+        run: |
+          echo "Apply failed — uploading crash state to Azure Storage..."
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            -e ARM_CLIENT_ID \
+            -e ARM_CLIENT_SECRET \
+            -e ARM_SUBSCRIPTION_ID \
+            -e ARM_TENANT_ID \
+            ${{ env.TF_IMAGE }} \
+            sh -c '
+              az login --service-principal \
+                -u "$ARM_CLIENT_ID" \
+                -p "$ARM_CLIENT_SECRET" \
+                --tenant "$ARM_TENANT_ID" \
+                --output none
+
+              STATE_FILE="terraform.tfstate"
+              if [ -f "$STATE_FILE" ]; then
+                TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                az storage blob upload \
+                  --account-name "'"$TF_STATE_ACCOUNT"'" \
+                  --container-name "'"$TF_STATE_CONTAINER"'" \
+                  --name "crash-states/'"$TF_STATE_KEY"'.${TIMESTAMP}" \
+                  --file "$STATE_FILE" \
+                  --auth-mode login \
+                  --overwrite
+                echo "State saved as crash-states/'"$TF_STATE_KEY"'.${TIMESTAMP}"
+              else
+                echo "No local state file found — state is likely already in remote backend."
+              fi
+            '
+
+  # ── Stage 6: Deploy (sync state to Azure Storage) ──────────
+  # After a successful apply, ensures the latest state file is
+  # persisted to Azure Storage as the canonical state snapshot.
+  deploy:
+    name: Deploy (Sync State)
+    needs: apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-docker-image
+
+      - name: Load Docker image
+        run: docker load -i tf-image.tar.gz
+
+      - name: Download init artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-init
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Verify state and upload snapshot
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace/${{ env.TF_WORKING_DIR }} \
+            -e ARM_CLIENT_ID \
+            -e ARM_CLIENT_SECRET \
+            -e ARM_SUBSCRIPTION_ID \
+            -e ARM_TENANT_ID \
+            ${{ env.TF_IMAGE }} \
+            sh -c '
+              echo "Pulling latest state from remote backend..."
+              terraform state pull > /dev/null
+              echo "Remote state is accessible and consistent."
+
+              az login --service-principal \
+                -u "$ARM_CLIENT_ID" \
+                -p "$ARM_CLIENT_SECRET" \
+                --tenant "$ARM_TENANT_ID" \
+                --output none
+
+              az account set --subscription "$ARM_SUBSCRIPTION_ID"
+
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              COMMIT_SHA="'"${{ github.sha }}"'"
+
+              terraform state pull > current.tfstate
+
+              az storage blob upload \
+                --account-name "'"$TF_STATE_ACCOUNT"'" \
+                --container-name "'"$TF_STATE_CONTAINER"'" \
+                --name "snapshots/'"$TF_STATE_KEY"'.${TIMESTAMP}.${COMMIT_SHA:0:7}" \
+                --file current.tfstate \
+                --auth-mode login \
+                --overwrite
+
+              echo "State snapshot uploaded: snapshots/'"$TF_STATE_KEY"'.${TIMESTAMP}.${COMMIT_SHA:0:7}"
+              echo "Pipeline complete — infrastructure deployed and state synced."
+            '
+
+      - name: Summary
+        run: |
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **State key**: \`${{ env.TF_STATE_KEY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **State snapshot**: saved to \`snapshots/\` in Azure Storage" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: dev" >> $GITHUB_STEP_SUMMARY
