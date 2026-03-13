@@ -124,10 +124,10 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - **Status**: ✅ Complete
 
 ### 2.4 Frontend Testing
-- [ ] Write unit tests for services
+- [x] Write unit tests for services (zonesApi, historyApi, alarmPreferences — 17 tests)
 - [ ] Write unit tests for components
-- [ ] Run: `npm test`
-- **Status**: ⏳ Not Started
+- [x] Run: `npm test`
+- **Status**: 🟡 Mostly Complete (component tests deferred)
 
 ### 2.5 API Integration
 - [x] Frontend calls backend `/health` endpoint
@@ -137,7 +137,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [x] Error handling for network failures
 - **Status**: ✅ Complete
 
-**Phase 2 Complete?** 🟡 Mostly (testing deferred to Phase 3 CI)
+**Phase 2 Complete?** 🟡 Mostly (component tests deferred)
 
 ---
 
@@ -152,9 +152,12 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
   - [x] TypeScript type check (`tsc --noEmit`)
   - [x] Expo web build (`expo export --platform web`)
   - [x] Dependency audit
+  - [x] Jest test suite (17 tests — zonesApi, historyApi, alarmPreferences)
+  - [x] Pipeline order: TypeCheck + Lint → Build → Tests
 - [x] Workflows trigger on push to master and PRs
 - [x] Path filters so backend changes only trigger backend CI
 - [x] Linting passes locally (ruff + tsc)
+- [x] All CI pipelines passing on GitHub
 - **Status**: ✅ Complete
 
 ### 3.2 Infrastructure as Code
@@ -210,11 +213,11 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ```
 Phase 1: Setup & Hello World          [████████░░] 80%
-Phase 2: Development & Testing        [████████░░] 80%
+Phase 2: Development & Testing        [█████████░] 90%
 Phase 3: CI/CD & DevOps               [███░░░░░░░] 25%
 Phase 4: Production Ready             [░░░░░░░░░░]  0%
 ─────────────────────────────────────────────────
-Total Progress:                        [███░░░░░░░] 30%
+Total Progress:                        [████░░░░░░] 35%
 ```
 
 ---

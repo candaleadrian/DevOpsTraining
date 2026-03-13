@@ -6,7 +6,7 @@
 - **Frontend**: React Native (Expo Web) with Leaflet + OpenStreetMap
 - **Backend**: Python/FastAPI
 - **Infrastructure**: Azure (Container Apps, PostgreSQL) — planned
-- **CI/CD**: GitHub + GitHub Actions — planned
+- **CI/CD**: GitHub + GitHub Actions ✅ (backend + frontend CI pipelines active)
 - **Containerization**: Docker + Docker Compose
 - **Observability**: Azure Application Insights — planned
 - **Database**: PostgreSQL 15 (running, not yet used for persistence)
@@ -58,28 +58,53 @@ Goal: Establish foundation, learn tools, create "Hello World" app that commits a
 
 ```
 proximity-alarm-app/
+├── .github/
+│   └── workflows/
+│       ├── ci-backend.yml          # Backend CI: lint (ruff) + test (pytest + PostgreSQL)
+│       └── ci-frontend.yml         # Frontend CI: typecheck + lint → build → test
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
+│   ├── alembic.ini
+│   ├── alembic/
+│   │   ├── env.py
+│   │   └── versions/
+│   │       ├── 0001_create_alarm_zones.py
+│   │       └── 0002_create_alarm_events.py
+│   ├── tests/
+│   │   ├── conftest.py             # SQLite in-memory DB override for tests
+│   │   └── test_api.py             # 17 API tests (CRUD, proximity, events)
 │   └── src/
-│       └── main.py                 # FastAPI app (all endpoints here for now)
+│       ├── main.py                 # FastAPI app (all endpoints)
+│       ├── database.py             # SQLAlchemy engine + session
+│       └── models/
+│           ├── alarm_zone.py       # AlarmZone model
+│           └── alarm_event.py      # AlarmEvent model
 ├── frontend/
 │   ├── Dockerfile
 │   ├── package.json
 │   ├── app.json
+│   ├── jest.config.js              # Jest configuration (ts-jest)
 │   └── src/
 │       ├── navigation/
 │       │   └── AppNavigator.tsx    # Bottom tabs + stack navigator
 │       ├── screens/
 │       │   ├── HomeScreen.tsx
-│       │   ├── MapScreen.tsx       # Leaflet map with proximity detection
-│       │   ├── SettingsScreen.tsx   # Alarm preferences
+│       │   ├── MapScreen.tsx       # Leaflet map with multi-zone proximity
+│       │   ├── HistoryScreen.tsx   # Alarm history log
+│       │   ├── SettingsScreen.tsx  # Alarm preferences
 │       │   └── AlarmDetailScreen.tsx
 │       ├── services/
-│       │   ├── locationService.js  # API calls to backend
+│       │   ├── zonesApi.ts         # Zone CRUD API client
+│       │   ├── historyApi.ts       # Alarm events API client
 │       │   ├── alarmPreferences.ts # localStorage preference store
 │       │   ├── alarmTrigger.ts     # Web Audio + Notification API
-│       │   └── health.ts          # Health check service
+│       │   ├── locationService.js  # Legacy API calls
+│       │   ├── health.ts           # Health check service
+│       │   └── __tests__/
+│       │       ├── zonesApi.test.ts        # 7 tests
+│       │       ├── historyApi.test.ts      # 5 tests
+│       │       └── alarmPreferences.test.ts # 5 tests
 │       ├── ui/                     # Reusable layout primitives
 │       ├── config/                 # Theme, constants
 │       └── hooks/                  # Custom hooks
@@ -398,18 +423,18 @@ pytest backend/tests/integration/ -v
 - [x] Test alarm button in Settings
 
 **TODO:**
-- [ ] Display saved alarm zones from DB (once backend CRUD exists)
-- [ ] Multiple simultaneous alarm zones
+- [x] Display saved alarm zones from DB (backend CRUD + frontend zonesApi)
+- [x] Multiple simultaneous alarm zones (multi-zone CRUD + proximity check)
 - [ ] Simulation mode for testing without real GPS
-- [ ] Unit tests with Jest
+- [x] Unit tests with Jest (17 tests — zonesApi, historyApi, alarmPreferences)
 
 ### 2.3 Testing Summary
 
 | Test Type | Framework | Status | Command |
 |-----------|-----------|--------|---------|
-| Backend Unit | pytest | Planned | `pytest backend/tests/unit/ -v` |
-| Backend Integration | TestClient | Planned | `pytest backend/tests/integration/ -v` |
-| Frontend Unit | Jest | Planned | `npm test` |
+| Backend Unit | pytest | ✅ Done (17 tests) | `pytest tests/ -v --tb=short` |
+| Backend Integration | TestClient + SQLite | ✅ Done | `pytest tests/ -v` |
+| Frontend Unit | Jest + ts-jest | ✅ Done (17 tests) | `npm test` |
 | Frontend E2E | Playwright/Cypress | Planned | TBD |
 | Load Testing | Locust | Planned | TBD |
 
