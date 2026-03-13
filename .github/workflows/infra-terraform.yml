@@ -45,6 +45,13 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Verify init succeeded
+        run: |
+          echo "--- .terraform directory ---"
+          ls -la .terraform/
+          echo "--- lock file ---"
+          cat .terraform.lock.hcl
+
       - name: Upload init artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -53,6 +60,7 @@ jobs:
             ${{ env.TF_WORKING_DIR }}/.terraform
             ${{ env.TF_WORKING_DIR }}/.terraform.lock.hcl
           retention-days: 1
+          include-hidden-files: true
 
   # ── Stage 2: Format ────────────────────────────────────────
   format:
