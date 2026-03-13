@@ -28,6 +28,7 @@ def setup_db():
 @pytest.fixture(autouse=True)
 def override_get_db():
     """Override the FastAPI get_db dependency to use the test database."""
+
     def _get_test_db():
         db = TestSessionLocal()
         try:

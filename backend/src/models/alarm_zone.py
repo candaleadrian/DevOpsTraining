@@ -12,7 +12,9 @@ class AlarmZone(Base):
     longitude = Column(Float, nullable=False)
     radius_meters = Column(Integer, nullable=False, default=500)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
     updated_at = Column(
         DateTime,
         nullable=False,
