@@ -90,12 +90,12 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - **Status**: ✅ Complete
 
 ### 2.2 Backend Testing
-- [ ] Write unit tests for proximity calculation
-- [ ] Write unit tests for API endpoints
-- [ ] Write integration tests with test database
-- [ ] Achieve 80%+ code coverage
-- [ ] Run: `pytest tests/ -v --cov`
-- **Status**: ⏳ Not Started
+- [x] Write unit tests for proximity calculation
+- [x] Write unit tests for API endpoints (17 tests)
+- [x] Write integration tests with test database (SQLite in-memory via conftest.py)
+- [ ] Achieve 80%+ code coverage (currently 60%+ enforced in CI)
+- [x] Run: `pytest tests/ -v --tb=short`
+- **Status**: 🟡 Mostly Complete
 
 ### 2.3 Frontend Features
 - [x] HomeScreen — main dashboard with backend health status
@@ -144,11 +144,18 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 ## PHASE 3: CI/CD & DevOps (upcoming)
 
 ### 3.1 GitHub Actions CI Pipeline
-- [ ] Create `.github/workflows/ci-backend.yml`
-- [ ] Create `.github/workflows/ci-frontend.yml`
-- [ ] Tests run on push to main and PRs
-- [ ] Linting passes
-- **Status**: ⏳ Not Started
+- [x] Create `.github/workflows/ci-backend.yml`
+  - [x] Ruff lint + format check
+  - [x] pytest with PostgreSQL service container
+  - [x] Coverage threshold (60%)
+- [x] Create `.github/workflows/ci-frontend.yml`
+  - [x] TypeScript type check (`tsc --noEmit`)
+  - [x] Expo web build (`expo export --platform web`)
+  - [x] Dependency audit
+- [x] Workflows trigger on push to master and PRs
+- [x] Path filters so backend changes only trigger backend CI
+- [x] Linting passes locally (ruff + tsc)
+- **Status**: ✅ Complete
 
 ### 3.2 Infrastructure as Code
 - [ ] Create Bicep templates for Azure resources
@@ -171,7 +178,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [ ] `npm audit` and `pip audit`
 - **Status**: ⏳ Not Started
 
-**Phase 3 Complete?** ⏳ Not Started
+**Phase 3 Complete?** 🚧 In Progress (CI done, IaC/deployment/monitoring next)
 
 ---
 
@@ -204,7 +211,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 ```
 Phase 1: Setup & Hello World          [████████░░] 80%
 Phase 2: Development & Testing        [████████░░] 80%
-Phase 3: CI/CD & DevOps               [░░░░░░░░░░]  0%
+Phase 3: CI/CD & DevOps               [███░░░░░░░] 25%
 Phase 4: Production Ready             [░░░░░░░░░░]  0%
 ─────────────────────────────────────────────────
 Total Progress:                        [███░░░░░░░] 30%
