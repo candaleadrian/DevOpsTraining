@@ -5,8 +5,6 @@ resource "azurerm_resource_group" "main" {
   tags     = local.common_tags
 }
 
-# 
-
 # # Networking
 # module "network" {
 #   source = "./modules/network"

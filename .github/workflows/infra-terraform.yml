@@ -99,6 +99,9 @@ jobs:
           name: terraform-init
           path: ${{ env.TF_WORKING_DIR }}
 
+      - name: Fix provider permissions
+        run: chmod -R +x .terraform/providers/
+
       - name: Terraform Validate
         run: terraform validate
 
@@ -121,6 +124,9 @@ jobs:
         with:
           name: terraform-init
           path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Fix provider permissions
+        run: chmod -R +x .terraform/providers/
 
       - name: Terraform Plan
         run: |
@@ -200,6 +206,9 @@ jobs:
           name: terraform-init
           path: ${{ env.TF_WORKING_DIR }}
 
+      - name: Fix provider permissions
+        run: chmod -R +x .terraform/providers/
+
       - name: Download Plan artifact
         uses: actions/download-artifact@v4
         with:
@@ -256,6 +265,9 @@ jobs:
         with:
           name: terraform-init
           path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Fix provider permissions
+        run: chmod -R +x .terraform/providers/
 
       - name: Verify state is consistent
         run: |
