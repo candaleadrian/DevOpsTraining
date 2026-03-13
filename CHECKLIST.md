@@ -74,15 +74,20 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [x] POST `/set-location` — set alarm point + radius
 - [x] POST `/check-location` — check if user is inside radius
 - [x] GET `/health` — health check
-- [ ] Database models (AlarmZone, User)
-- [ ] Database migrations with Alembic
-- [ ] CRUD endpoints for alarm zones:
-  - [ ] POST `/api/alarms` — create alarm zone
-  - [ ] GET `/api/alarms` — list alarm zones
-  - [ ] GET `/api/alarms/{id}` — get alarm zone
-  - [ ] PUT `/api/alarms/{id}` — update alarm zone
-  - [ ] DELETE `/api/alarms/{id}` — delete alarm zone
-- **Status**: 🚧 In Progress
+- [x] Database models (AlarmZone, AlarmEvent)
+- [x] Database migrations with Alembic (0001 + 0002)
+- [x] CRUD endpoints for alarm zones:
+  - [x] POST `/api/zones` — create alarm zone
+  - [x] GET `/api/zones` — list alarm zones
+  - [x] GET `/api/zones/{id}` — get alarm zone
+  - [x] PATCH `/api/zones/{id}` — update alarm zone
+  - [x] DELETE `/api/zones/{id}` — delete alarm zone
+- [x] Alarm history endpoints:
+  - [x] POST `/api/alarm-events` — log alarm event
+  - [x] GET `/api/alarm-events` — list history (filterable)
+  - [x] DELETE `/api/alarm-events` — clear history
+- [x] Multi-zone proximity check: POST `/api/zones/check`
+- **Status**: ✅ Complete
 
 ### 2.2 Backend Testing
 - [ ] Write unit tests for proximity calculation
@@ -112,9 +117,11 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
   - [x] Browser Notification API
   - [x] Cooldown to prevent spam
   - [x] Preferences stored in localStorage
-- [ ] Save multiple alarm zones (frontend CRUD)
-- [ ] Alarm history display
-- **Status**: 🚧 In Progress
+- [x] Save multiple alarm zones (frontend CRUD via zonesApi)
+- [x] Alarm history display (HistoryScreen with auto-refresh)
+- [x] Toast notifications for add/delete feedback
+- [x] Delete confirmation flow
+- **Status**: ✅ Complete
 
 ### 2.4 Frontend Testing
 - [ ] Write unit tests for services
@@ -125,11 +132,12 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 ### 2.5 API Integration
 - [x] Frontend calls backend `/health` endpoint
 - [x] CORS configured between frontend and backend
-- [ ] Frontend CRUD for alarm zones via backend API
-- [ ] Error handling for network failures
-- **Status**: 🚧 In Progress
+- [x] Frontend CRUD for alarm zones via backend API
+- [x] Alarm event logging from MapScreen to backend
+- [x] Error handling for network failures
+- **Status**: ✅ Complete
 
-**Phase 2 Complete?** 🚧 In Progress
+**Phase 2 Complete?** 🟡 Mostly (testing deferred to Phase 3 CI)
 
 ---
 
@@ -195,7 +203,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ```
 Phase 1: Setup & Hello World          [████████░░] 80%
-Phase 2: Development & Testing        [████░░░░░░] 40%
+Phase 2: Development & Testing        [████████░░] 80%
 Phase 3: CI/CD & DevOps               [░░░░░░░░░░]  0%
 Phase 4: Production Ready             [░░░░░░░░░░]  0%
 ─────────────────────────────────────────────────
