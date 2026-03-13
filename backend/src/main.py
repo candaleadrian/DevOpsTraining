@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
-from src.db.database import engine, get_db, Base
+from src.db.database import get_db
 from src.models.alarm_zone import AlarmZone
 from src.models.alarm_event import AlarmEvent
 
@@ -30,6 +30,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Pydantic schemas
 # ---------------------------------------------------------------------------
+
 
 class AlarmZoneCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -63,7 +64,7 @@ class AlarmZoneOut(BaseModel):
 class AlarmEventCreate(BaseModel):
     zone_id: int
     zone_name: str = Field(..., min_length=1, max_length=255)
-    event_type: str = Field(..., pattern=r'^(entered|exited)$')
+    event_type: str = Field(..., pattern=r"^(entered|exited)$")
     distance_meters: float = Field(..., ge=0)
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
@@ -98,11 +99,15 @@ class UserLocation(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6371000  # Earth radius in meters
     dlat = radians(lat2 - lat1)
     dlon = radians(lon2 - lon1)
-    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    )
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
 
@@ -110,6 +115,7 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 # ---------------------------------------------------------------------------
 # Alarm Zones CRUD
 # ---------------------------------------------------------------------------
+
 
 @app.post("/api/zones", response_model=AlarmZoneOut, status_code=201)
 def create_zone(zone: AlarmZoneCreate, db: Session = Depends(get_db)):
@@ -164,24 +170,30 @@ def delete_zone(zone_id: int, db: Session = Depends(get_db)):
 # Check proximity against ALL active zones
 # ---------------------------------------------------------------------------
 
+
 @app.post("/api/zones/check")
 def check_zones(user_location: UserLocation, db: Session = Depends(get_db)):
     zones = db.query(AlarmZone).filter(AlarmZone.is_active).all()
     results = []
     for z in zones:
-        d = calculate_distance(z.latitude, z.longitude, user_location.latitude, user_location.longitude)
-        results.append({
-            "zone_id": z.id,
-            "name": z.name,
-            "distance": round(d, 1),
-            "alarm": d <= z.radius_meters,
-        })
+        d = calculate_distance(
+            z.latitude, z.longitude, user_location.latitude, user_location.longitude
+        )
+        results.append(
+            {
+                "zone_id": z.id,
+                "name": z.name,
+                "distance": round(d, 1),
+                "alarm": d <= z.radius_meters,
+            }
+        )
     return results
 
 
 # ---------------------------------------------------------------------------
 # Alarm Events (history log)
 # ---------------------------------------------------------------------------
+
 
 @app.post("/api/alarm-events", response_model=AlarmEventOut, status_code=201)
 def create_alarm_event(event: AlarmEventCreate, db: Session = Depends(get_db)):
