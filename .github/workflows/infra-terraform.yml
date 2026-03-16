@@ -34,7 +34,7 @@ jobs:
     name: Init
     runs-on: ubuntu-latest
     container:
-      image: zenika/terraform-azure-cli:release-6.1_terraform-1.0.6_azcli-2.28.1
+      image: jrichardsz/azure-cli-terraform:apine-3.19.1-azcli-2.61.0
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -68,7 +68,7 @@ jobs:
     needs: init
     runs-on: ubuntu-latest
     container:
-      image: zenika/terraform-azure-cli:release-6.1_terraform-1.0.6_azcli-2.28.1
+      image: jrichardsz/azure-cli-terraform:apine-3.19.1-azcli-2.61.0
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -85,7 +85,7 @@ jobs:
     needs: init
     runs-on: ubuntu-latest
     container:
-      image: zenika/terraform-azure-cli:release-6.1_terraform-1.0.6_azcli-2.28.1
+      image: jrichardsz/azure-cli-terraform:apine-3.19.1-azcli-2.61.0
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -111,7 +111,7 @@ jobs:
     needs: [format, validate]
     runs-on: ubuntu-latest
     container:
-      image: zenika/terraform-azure-cli:release-6.1_terraform-1.0.6_azcli-2.28.1
+      image: jrichardsz/azure-cli-terraform:apine-3.19.1-azcli-2.61.0
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -191,7 +191,7 @@ jobs:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push' && needs.plan.result == 'success'
     runs-on: ubuntu-latest
     container:
-      image: zenika/terraform-azure-cli:release-6.1_terraform-1.0.6_azcli-2.28.1
+      image: jrichardsz/azure-cli-terraform:apine-3.19.1-azcli-2.61.0
     environment: dev
     defaults:
       run:
@@ -253,7 +253,7 @@ jobs:
     if: needs.apply.result == 'success'
     runs-on: ubuntu-latest
     container:
-      image: zenika/terraform-azure-cli:release-6.1_terraform-1.0.6_azcli-2.28.1
+      image: jrichardsz/azure-cli-terraform:apine-3.19.1-azcli-2.61.0
     defaults:
       run:
         working-directory: ${{ env.TF_WORKING_DIR }}
