@@ -4,7 +4,7 @@ resource "azurerm_resource_group" "main" {
   location = var.location
   tags     = local.common_tags
 }
-
+#
 # # Networking
 # module "network" {
 #   source = "./modules/network"
