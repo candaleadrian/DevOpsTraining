@@ -11,8 +11,8 @@ terraform {
   # Remote state in Azure Storage
   # The storage account must be created beforehand (see infra/terraform/README.md)
   backend "azurerm" {
-    resource_group_name  = "devops-learning-tfstate-rg"
-    storage_account_name = "devopslearningtfstate"
+    resource_group_name  = "proxalarm-dev-gr"
+    storage_account_name = "proxalarmdevsa"
     container_name       = "tfstate"
     key                  = "proximity-alarm.tfstate"
   }

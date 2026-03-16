@@ -23,8 +23,8 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   TF_VAR_db_admin_password: ${{ secrets.TF_VAR_DB_ADMIN_PASSWORD }}
   # State storage
-  TF_STATE_RG: devops-learning-tfstate-rg
-  TF_STATE_ACCOUNT: devopslearningtfstate
+  TF_STATE_RG: proxalarm-dev-gr
+  TF_STATE_ACCOUNT: proxalarmdevsa
   TF_STATE_CONTAINER: tfstate
   TF_STATE_KEY: proximity-alarm.tfstate
 
