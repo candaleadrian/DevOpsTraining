@@ -51,19 +51,20 @@ module "monitoring" {
   tags                = local.common_tags
 }
 
-# # Container Apps (Backend + Frontend)
-# module "container_apps" {
-#   source = "./modules/container_apps"
+# Container Apps (Backend + Frontend)
+module "container_apps" {
+  source = "./modules/container_apps"
 
-#   resource_group_name                = azurerm_resource_group.main.name
-#   location                           = azurerm_resource_group.main.location
-#   resource_prefix                    = local.resource_prefix
-#   subnet_id                          = module.network.container_apps_subnet_id
-#   log_analytics_workspace_id         = module.monitoring.log_analytics_workspace_id
-#   container_registry_login_server    = module.container_registry.login_server
-#   container_registry_admin_username  = module.container_registry.admin_username
-#   container_registry_admin_password  = module.container_registry.admin_password
-#   database_url                       = module.database.connection_string
-#   appinsights_connection_string      = module.monitoring.appinsights_connection_string
-#   tags                               = local.common_tags
-# }
+  resource_group_name                = azurerm_resource_group.main.name
+  location                           = azurerm_resource_group.main.location
+  resource_prefix                    = local.resource_prefix
+  subnet_id                          = module.network.container_apps_subnet_id
+  log_analytics_workspace_id         = module.monitoring.log_analytics_workspace_id
+  container_registry_login_server    = module.container_registry.login_server
+  container_registry_admin_username  = module.container_registry.admin_username
+  container_registry_admin_password  = module.container_registry.admin_password
+  database_url                       = module.database.connection_string
+  appinsights_connection_string      = module.monitoring.appinsights_connection_string
+  environment                        = var.environment
+  tags                               = local.common_tags
+}
