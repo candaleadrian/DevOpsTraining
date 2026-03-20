@@ -56,7 +56,7 @@ resource "azurerm_resource_provider_registration" "microsoft_app" {
   name = "Microsoft.App"
 }
 
-# Container Apps (Backend + Frontend )
+# Container Apps (Backend + Frontend)
 module "container_apps" {
   source = "./modules/container_apps"
 
