@@ -29,14 +29,14 @@ module "container_registry" {
 module "database" {
   source = "./modules/database"
 
-  resource_group_name  = azurerm_resource_group.main.name
-  location             = azurerm_resource_group.main.location
-  resource_prefix      = local.resource_prefix
-  subnet_id            = module.network.database_subnet_id
-  private_dns_zone_id  = module.network.postgres_private_dns_zone_id
-  admin_username       = var.db_admin_username
-  admin_password       = var.db_admin_password
-  tags                 = local.common_tags
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  resource_prefix     = local.resource_prefix
+  subnet_id           = module.network.database_subnet_id
+  private_dns_zone_id = module.network.postgres_private_dns_zone_id
+  admin_username      = var.db_admin_username
+  admin_password      = var.db_admin_password
+  tags                = local.common_tags
 }
 
 # # Monitoring (Log Analytics + Application Insights)
