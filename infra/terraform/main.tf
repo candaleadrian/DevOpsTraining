@@ -4,16 +4,16 @@ resource "azurerm_resource_group" "main" {
   location = var.location
   tags     = local.common_tags
 }
-#
-# # Networking
-# module "network" {
-#   source = "./modules/network"
 
-#   resource_group_name = azurerm_resource_group.main.name
-#   location            = azurerm_resource_group.main.location
-#   resource_prefix     = local.resource_prefix
-#   tags                = local.common_tags
-# }
+# Networking
+module "network" {
+  source = "./modules/network"
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  resource_prefix     = local.resource_prefix
+  tags                = local.common_tags
+}
 
 # # Container Registry
 # module "container_registry" {
