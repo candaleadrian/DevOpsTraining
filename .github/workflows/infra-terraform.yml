@@ -215,6 +215,14 @@ jobs:
           name: tfplan
           path: ${{ env.TF_WORKING_DIR }}
 
+      - name: Import existing Container App Environment (TEMPORARY)
+        run: |
+          terraform import \
+            -var-file="${{ env.TF_VAR_FILE }}" \
+            module.container_apps.azurerm_container_app_environment.main \
+            "/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/rg-proximity-alarm-dev/providers/Microsoft.App/managedEnvironments/cae-proximity-alarm-dev" \
+          || echo "Import skipped (resource may already be in state)"
+
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
