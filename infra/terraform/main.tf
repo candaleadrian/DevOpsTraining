@@ -37,6 +37,8 @@ module "database" {
   admin_username      = var.db_admin_username
   admin_password      = var.db_admin_password
   tags                = local.common_tags
+
+  depends_on = [module.network]
 }
 
 # # Monitoring (Log Analytics + Application Insights)
