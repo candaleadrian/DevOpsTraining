@@ -218,17 +218,6 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
-      - name: Get SP credentials
-        id: tf-output
-        run: |
-          echo "credentials=$(terraform output -raw github_actions_credentials)" >> $GITHUB_OUTPUT
-          echo "acr_name=$(terraform output -raw acr_name)" >> $GITHUB_OUTPUT
-
-      - name: Print credentials (TEMPORARY - DELETE AFTER SETTING GITHUB SECRETS)
-        run: |
-          echo "::warning::AZURE_CREDENTIALS=${{ steps.tf-output.outputs.credentials }}"
-          echo "::warning::ACR_NAME=${{ steps.tf-output.outputs.acr_name }}"
-
       - name: Save state file on failure
         if: failure()
         run: |

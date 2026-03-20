@@ -28,20 +28,3 @@ output "appinsights_connection_string" {
   value       = module.monitoring.appinsights_connection_string
   sensitive   = true
 }
-
-# GitHub Actions Service Principal outputs
-output "github_actions_credentials" {
-  description = "AZURE_CREDENTIALS JSON for GitHub Actions"
-  sensitive   = true
-  value = jsonencode({
-    clientId       = azuread_application.github_actions.client_id
-    clientSecret   = azuread_service_principal_password.github_actions.value
-    subscriptionId = data.azurerm_subscription.current.subscription_id
-    tenantId       = data.azurerm_client_config.current.tenant_id
-  })
-}
-
-output "acr_name" {
-  description = "ACR name for GitHub Actions ACR_NAME secret"
-  value       = replace(module.container_registry.login_server, ".azurecr.io", "")
-}

@@ -51,30 +51,6 @@ module "monitoring" {
   tags                = local.common_tags
 }
 
-# Service Principal for GitHub Actions
-data "azurerm_subscription" "current" {}
-data "azurerm_client_config" "current" {}
-
-resource "azuread_application" "github_actions" {
-  display_name = "github-actions-${local.resource_prefix}"
-  owners       = [data.azurerm_client_config.current.object_id]
-}
-
-resource "azuread_service_principal" "github_actions" {
-  client_id = azuread_application.github_actions.client_id
-  owners    = [data.azurerm_client_config.current.object_id]
-}
-
-resource "azuread_service_principal_password" "github_actions" {
-  service_principal_id = azuread_service_principal.github_actions.id
-}
-
-resource "azurerm_role_assignment" "github_actions_contributor" {
-  scope                = data.azurerm_subscription.current.id
-  role_definition_name = "Contributor"
-  principal_id         = azuread_service_principal.github_actions.object_id
-}
-
 # Register Microsoft.App resource provider
 resource "azurerm_resource_provider_registration" "microsoft_app" {
   name = "Microsoft.App"
