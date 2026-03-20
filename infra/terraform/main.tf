@@ -51,6 +51,11 @@ module "monitoring" {
   tags                = local.common_tags
 }
 
+# Register Microsoft.App resource provider
+resource "azurerm_resource_provider_registration" "microsoft_app" {
+  name = "Microsoft.App"
+}
+
 # Container Apps (Backend + Frontend)
 module "container_apps" {
   source = "./modules/container_apps"
@@ -67,4 +72,6 @@ module "container_apps" {
   appinsights_connection_string     = module.monitoring.appinsights_connection_string
   environment                       = var.environment
   tags                              = local.common_tags
+
+  depends_on = [azurerm_resource_provider_registration.microsoft_app]
 }
