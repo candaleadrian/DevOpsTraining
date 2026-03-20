@@ -97,5 +97,5 @@ jobs:
         run: |
           docker build -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-backend:latest \
                        -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-backend:${{ github.sha }} \
-                       ./backend
+                       .
           docker push ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-backend --all-tags
