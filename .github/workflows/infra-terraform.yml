@@ -223,8 +223,10 @@ jobs:
             "/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/rg-proximity-alarm-dev/providers/Microsoft.App/managedEnvironments/cae-proximity-alarm-dev" \
           || echo "Import skipped (resource may already be in state)"
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+      - name: Terraform Apply (TEMPORARY - re-plan after import)
+        run: terraform apply -auto-approve -var-file="${{ env.TF_VAR_FILE }}"
+      # - name: Terraform Apply
+      #   run: terraform apply -auto-approve tfplan
 
       - name: Save state file on failure
         if: failure()
