@@ -41,15 +41,15 @@ module "database" {
   depends_on = [module.network]
 }
 
-# # Monitoring (Log Analytics + Application Insights)
-# module "monitoring" {
-#   source = "./modules/monitoring"
+# Monitoring (Log Analytics + Application Insights)
+module "monitoring" {
+  source = "./modules/monitoring"
 
-#   resource_group_name = azurerm_resource_group.main.name
-#   location            = azurerm_resource_group.main.location
-#   resource_prefix     = local.resource_prefix
-#   tags                = local.common_tags
-# }
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  resource_prefix     = local.resource_prefix
+  tags                = local.common_tags
+}
 
 # # Container Apps (Backend + Frontend)
 # module "container_apps" {
