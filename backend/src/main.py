@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
 from math import radians, cos, sin, sqrt, atan2
@@ -12,15 +14,20 @@ from src.models.alarm_event import AlarmEvent
 
 app = FastAPI(title="Proximity Alarm API", version="0.2.0")
 
-# Allow the Expo development server to call the backend during local development.
+# Allow the Expo development server and Azure Container Apps to call the backend.
+_cors_origins = [
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+    "http://localhost:19006",
+    "http://127.0.0.1:19006",
+]
+_extra_origin = os.environ.get("FRONTEND_URL")
+if _extra_origin:
+    _cors_origins.append(_extra_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8081",
-        "http://127.0.0.1:8081",
-        "http://localhost:19006",
-        "http://127.0.0.1:19006",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

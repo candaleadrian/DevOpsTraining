@@ -96,8 +96,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, test]
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: .
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -107,9 +120,19 @@ jobs:
       - name: Login to ACR
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
+      - name: Get backend URL from Terraform state
+        id: tf-outputs
+        run: |
+          cd infra/terraform
+          terraform init -input=false
+          BACKEND_FQDN=$(terraform output -raw backend_url)
+          echo "backend_url=https://${BACKEND_FQDN}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push image
         run: |
-          docker build -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend:latest \
-                       -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend:${{ github.sha }} \
-                       .
+          docker build \
+            --build-arg EXPO_PUBLIC_API_BASE_URL=${{ steps.tf-outputs.outputs.backend_url }} \
+            -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend:latest \
+            -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend:${{ github.sha }} \
+            ./frontend
           docker push ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend --all-tags

@@ -1,11 +1,12 @@
 # Container Apps Environment
 resource "azurerm_container_app_environment" "main" {
-  name                       = "cae-${var.resource_prefix}"
-  location                   = var.location
-  resource_group_name        = var.resource_group_name
-  log_analytics_workspace_id = var.log_analytics_workspace_id
-  infrastructure_subnet_id   = var.subnet_id
-  tags                       = var.tags
+  name                           = "cae-${var.resource_prefix}"
+  location                       = var.location
+  resource_group_name            = var.resource_group_name
+  log_analytics_workspace_id     = var.log_analytics_workspace_id
+  infrastructure_subnet_id       = var.subnet_id
+  infrastructure_resource_group_name = "ME_cae-${var.resource_prefix}_${var.resource_group_name}_${var.location}"
+  tags                           = var.tags
 }
 
 # Backend Container App
@@ -73,6 +74,11 @@ resource "azurerm_container_app" "backend" {
         value = var.environment
       }
 
+      env {
+        name  = "FRONTEND_URL"
+        value = "https://ca-frontend-${var.resource_prefix}.${azurerm_container_app_environment.main.default_domain}"
+      }
+
       liveness_probe {
         transport = "HTTP"
         path      = "/health"
@@ -127,11 +133,6 @@ resource "azurerm_container_app" "frontend" {
       image  = "${var.container_registry_login_server}/proximity-alarm-frontend:latest"
       cpu    = var.frontend_cpu
       memory = var.frontend_memory
-
-      env {
-        name  = "BACKEND_URL"
-        value = "https://${azurerm_container_app.backend.ingress[0].fqdn}"
-      }
     }
   }
 }
