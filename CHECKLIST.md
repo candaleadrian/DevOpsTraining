@@ -14,27 +14,27 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [x] Install Docker Desktop
 - [x] Install Python 3.11+
 - [x] Install Node.js 20+
-- [ ] Install Azure CLI
+- [x] Install Azure CLI
 - [x] Install VS Code + extensions
-- **Status**: 🟡 Mostly Done (Azure CLI pending)
+- **Status**: ✅ Complete
 
 ### 1.2 Azure Setup
-- [ ] Create Azure account
-- [ ] Create Resource Group: `devops-learning-rg`
-- [ ] Create Container Registry
-- [ ] Create PostgreSQL server
-- [ ] Create Storage Account
-- [ ] Create Application Insights instance
-- [ ] Run: `az login` and verify access
-- **Status**: ⏳ Not Started
+- [x] Create Azure account
+- [x] Create Resource Group: `rg-proximity-alarm-dev`
+- [x] Create Container Registry (ACR Basic SKU)
+- [x] Create PostgreSQL server (Flexible Server v15)
+- [x] Create Storage Account (for Terraform state)
+- [x] Create Application Insights instance
+- [x] Run: `az login` and verify access
+- **Status**: ✅ Complete
 
 ### 1.3 GitHub Setup
 - [x] Create GitHub repository
 - [x] Clone locally
-- [ ] Add GitHub Secrets (Azure credentials)
+- [x] Add GitHub Secrets (Azure credentials)
 - [ ] Set up branch protection on `main`
-- [ ] Create environments: dev, staging, production
-- **Status**: 🚧 In Progress
+- [x] Create environments: dev
+- **Status**: 🟡 Mostly Complete
 
 ### 1.4 Backend Hello World
 - [x] Initialize project structure
@@ -63,7 +63,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [x] Confirm GitHub repo shows commits
 - **Status**: ✅ Complete
 
-**Phase 1 Complete?** 🟡 Mostly (Azure setup deferred to Phase 3)
+**Phase 1 Complete?** ✅ Yes
 
 ---
 
@@ -148,22 +148,41 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
   - [x] Ruff lint + format check
   - [x] pytest with PostgreSQL service container
   - [x] Coverage threshold (60%)
+  - [x] Push Docker image to ACR on master merge
 - [x] Create `.github/workflows/ci-frontend.yml`
   - [x] TypeScript type check (`tsc --noEmit`)
   - [x] Expo web build (`expo export --platform web`)
   - [x] Dependency audit
   - [x] Jest test suite (17 tests — zonesApi, historyApi, alarmPreferences)
   - [x] Pipeline order: TypeCheck + Lint → Build → Tests
+  - [x] Push Docker image to ACR on master merge
 - [x] Workflows trigger on push to master and PRs
 - [x] Path filters so backend changes only trigger backend CI
 - [x] Linting passes locally (ruff + tsc)
 - [x] All CI pipelines passing on GitHub
 - **Status**: ✅ Complete
 
-### 3.2 Infrastructure as Code
-- [ ] Create Bicep templates for Azure resources
-- [ ] Test Bicep validation
-- **Status**: ⏳ Not Started
+### 3.2 Infrastructure as Code (Terraform)
+- [x] Create Terraform project structure (`infra/terraform/`)
+- [x] Root config: providers.tf, variables.tf, main.tf, outputs.tf
+- [x] Module: `network` — VNet, subnets, Private DNS
+- [x] Module: `database` — PostgreSQL Flexible Server v15
+- [x] Module: `container_registry` — ACR (Basic SKU)
+- [x] Module: `container_apps` — Backend + Frontend Container Apps
+- [x] Module: `monitoring` — Log Analytics + Application Insights
+- [x] Environment-specific tfvars (dev, production)
+- [x] Remote state backend (Azure Storage)
+- [x] Microsoft.App resource provider registration
+- [x] CI/CD pipeline (`.github/workflows/infra-terraform.yml`)
+  - [x] Stage 1: Init — `terraform init`
+  - [x] Stage 2: Format — `terraform fmt -check`
+  - [x] Stage 3: Validate — `terraform validate`
+  - [x] Stage 4: Plan — `terraform plan` + artifact + PR comment
+  - [x] Stage 5: Apply — apply plan artifact, save state on failure
+  - [x] Stage 6: Deploy — sync state snapshot to Azure Storage
+- [x] All Azure resources deployed successfully
+- [x] Backend + Frontend Container Apps running in Azure
+- **Status**: ✅ Complete
 
 ### 3.3 Deployment Workflows
 - [ ] Deploy to staging on push to main
@@ -181,7 +200,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [ ] `npm audit` and `pip audit`
 - **Status**: ⏳ Not Started
 
-**Phase 3 Complete?** 🚧 In Progress (CI done, IaC/deployment/monitoring next)
+**Phase 3 Complete?** � ~75% (CI + IaC + deployment done, monitoring/security next)
 
 ---
 
@@ -212,22 +231,22 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 ## 🚀 Overall Progress
 
 ```
-Phase 1: Setup & Hello World          [████████░░] 80%
+Phase 1: Setup & Hello World          [██████████] 100%
 Phase 2: Development & Testing        [█████████░] 90%
-Phase 3: CI/CD & DevOps               [███░░░░░░░] 25%
+Phase 3: CI/CD & DevOps               [███████░░░] 75%
 Phase 4: Production Ready             [░░░░░░░░░░]  0%
 ─────────────────────────────────────────────────
-Total Progress:                        [████░░░░░░] 35%
+Total Progress:                        [███████░░░] 66%
 ```
 
 ---
 
 ## 📋 Next Steps (Immediate)
 
-1. **Save multiple alarm zones** — DB models + CRUD API + frontend integration
-2. **Add simulate mode** — right-click map to place fake position for testing
-3. **Backend tests** — unit tests for Haversine, API endpoint tests
-4. **CI/CD pipeline** — GitHub Actions for lint + test on every push
+1. **Monitoring** — Add Application Insights SDK to backend, structured logging
+2. **Security scanning** — Trivy container scanning, npm/pip audit in CI
+3. **Staging environment** — Deploy on push to main, manual approval for production
+4. **Branch protection** — Require PR reviews before merging to main
 
 ---
 

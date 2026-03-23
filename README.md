@@ -19,8 +19,8 @@ A **proximity alarm web app** that:
 | **Backend** | FastAPI (Python 3.11) |
 | **Database** | PostgreSQL 15 |
 | **Containers** | Docker & Docker Compose |
-| **CI/CD** | GitHub Actions (planned) |
-| **Cloud** | Microsoft Azure (planned) |
+| **CI/CD** | GitHub Actions |
+| **Cloud** | Microsoft Azure (Container Apps, ACR, PostgreSQL, App Insights) |
 
 ## 🚀 Quick Start
 
@@ -102,22 +102,20 @@ proximity-alarm-app/
 - [x] User preferences (Settings screen)
 
 ### 🔜 Next Steps
-1. **Save multiple alarm zones** — CRUD API + PostgreSQL persistence
-2. **Simulate mode** — right-click map to fake GPS position for testing
-3. **Backend tests** — pytest for Haversine + API endpoints
-4. **CI/CD pipeline** — GitHub Actions (lint, test, build on every push)
-5. **Alarm history** — log every alarm event with timestamp
-6. **User authentication** — login/register with JWT
-7. **Azure deployment** — Bicep IaC + Container Apps
-8. **Monitoring** — Application Insights + Grafana dashboard
+1. **Monitoring** — Application Insights integration + structured logging
+2. **Security scanning** — Trivy container scanning, npm/pip audit
+3. **Staging environment** — deploy on push to main with manual prod approval
+4. **Simulate mode** — right-click map to fake GPS position for testing
+5. **User authentication** — login/register with JWT
+6. **Alarm history** — log every alarm event with timestamp
 
 ## 🎓 Learning Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| 1. Setup & Hello World | Docker, Git, project scaffolding | ✅ ~80% |
-| 2. Development & Testing | Features, tests, DB integration | 🚧 ~40% |
-| 3. CI/CD & DevOps | GitHub Actions, IaC, deployment | ⏳ Not started |
+| 1. Setup & Hello World | Docker, Git, project scaffolding | ✅ Complete |
+| 2. Development & Testing | Features, tests, DB integration | ✅ ~90% |
+| 3. CI/CD & DevOps | GitHub Actions, IaC, deployment | ✅ ~75% |
 | 4. Production Ready | Security, monitoring, go-live | ⏳ Not started |
 - Go live! 🚀
 
