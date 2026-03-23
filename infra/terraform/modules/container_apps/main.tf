@@ -1,12 +1,12 @@
 # Container Apps Environment
 resource "azurerm_container_app_environment" "main" {
-  name                           = "cae-${var.resource_prefix}"
-  location                       = var.location
-  resource_group_name            = var.resource_group_name
-  log_analytics_workspace_id     = var.log_analytics_workspace_id
-  infrastructure_subnet_id       = var.subnet_id
+  name                               = "cae-${var.resource_prefix}"
+  location                           = var.location
+  resource_group_name                = var.resource_group_name
+  log_analytics_workspace_id         = var.log_analytics_workspace_id
+  infrastructure_subnet_id           = var.subnet_id
   infrastructure_resource_group_name = "ME_cae-${var.resource_prefix}_${var.resource_group_name}_${var.location}"
-  tags                           = var.tags
+  tags                               = var.tags
 
   workload_profile {
     name                  = "Consumption"
