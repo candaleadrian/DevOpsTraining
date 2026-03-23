@@ -7,6 +7,11 @@ resource "azurerm_container_app_environment" "main" {
   infrastructure_subnet_id       = var.subnet_id
   infrastructure_resource_group_name = "ME_cae-${var.resource_prefix}_${var.resource_group_name}_${var.location}"
   tags                           = var.tags
+
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+  }
 }
 
 # Backend Container App
