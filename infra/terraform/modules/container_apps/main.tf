@@ -53,6 +53,16 @@ resource "azurerm_container_app" "backend" {
       latest_revision = true
       percentage      = 100
     }
+
+    cors {
+      allowed_origins = [
+        "https://ca-frontend-${var.resource_prefix}.${azurerm_container_app_environment.main.default_domain}",
+        "http://localhost:8081",
+        "http://localhost:19006",
+      ]
+      allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+      allowed_headers = ["*"]
+    }
   }
 
   template {
