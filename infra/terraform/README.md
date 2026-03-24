@@ -2,6 +2,8 @@
 
 Terraform configuration for deploying the Proximity Alarm app to Azure.
 
+**Provider**: `hashicorp/azurerm ~> 4.0` (v4.65.0)
+
 ## Architecture
 
 ```
@@ -37,7 +39,7 @@ Terraform configuration for deploying the Proximity Alarm app to Azure.
 | `network`           | VNet, subnets (Container Apps + DB), Private DNS     |
 | `database`          | PostgreSQL Flexible Server v15 + app database        |
 | `container_registry`| Azure Container Registry (Basic SKU)                 |
-| `container_apps`    | Container Apps Environment, Backend + Frontend apps  |
+| `container_apps`    | Container Apps Environment, Backend + Frontend apps, CORS  |
 | `monitoring`        | Log Analytics Workspace, Application Insights        |
 
 ## Usage
@@ -67,13 +69,12 @@ terraform apply -var-file=environments/dev.tfvars -var="db_admin_password=YOUR_P
 terraform destroy -var-file=environments/dev.tfvars -var="db_admin_password=YOUR_PASSWORD"
 ```
 
-### Remote State (recommended for teams)
-Uncomment the backend block in `providers.tf` and create the storage account:
-```bash
-az group create -n devops-learning-tfstate-rg -l eastus
-az storage account create -n devopslearningtfstate -g devops-learning-tfstate-rg -l eastus --sku Standard_LRS
-az storage container create -n tfstate --account-name devopslearningtfstate
-```
+### Key Features
+
+- **CORS at infrastructure level**: Backend container app has a `cors` block in ingress allowing the frontend origin, `localhost:8081`, and `localhost:19006`
+- **Dynamic URLs**: Frontend URL and backend URL are constructed from the Container Apps Environment default domain (no hardcoded URLs)
+- **Alembic migrations**: Backend container runs `alembic upgrade head` before starting uvicorn
+- **Remote state**: Stored in Azure Storage (`proxalarmdevsa/tfstate`)
 
 ## Environment Configurations
 

@@ -5,11 +5,12 @@
 **Stack**: 
 - **Frontend**: React Native (Expo Web) with Leaflet + OpenStreetMap
 - **Backend**: Python/FastAPI
-- **Infrastructure**: Azure (Container Apps, PostgreSQL) — planned
-- **CI/CD**: GitHub + GitHub Actions ✅ (backend + frontend CI pipelines active)
+- **Infrastructure**: Azure (Container Apps, PostgreSQL) — deployed ✅
+- **CI/CD**: GitHub + GitHub Actions ✅ (backend + frontend + infra pipelines active)
 - **Containerization**: Docker + Docker Compose
+- **IaC**: Terraform (azurerm v4.65.0) ✅
 - **Observability**: Azure Application Insights — planned
-- **Database**: PostgreSQL 15 (running, not yet used for persistence)
+- **Database**: PostgreSQL 15 (running, Alembic migrations auto-run on deploy)
 - **Version Control**: Git/GitHub
 
 ---

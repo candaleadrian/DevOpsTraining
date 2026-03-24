@@ -98,14 +98,23 @@ frontend/src/
 
 ### 5. API Endpoints
 
-The backend currently provides:
+The backend provides:
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/` | Root message |
 | `GET` | `/health` | Health check |
-| `POST` | `/set-location` | Set alarm point (lat, lng, radius) |
-| `POST` | `/check-location` | Check proximity (returns alarm + distance) |
+| `POST` | `/set-location` | Set alarm point (lat, lng, radius) — legacy, in-memory |
+| `POST` | `/check-location` | Check proximity (returns alarm + distance) — legacy |
+| `POST` | `/api/zones` | Create alarm zone (DB-backed) |
+| `GET` | `/api/zones` | List alarm zones |
+| `GET` | `/api/zones/{id}` | Get alarm zone |
+| `PATCH` | `/api/zones/{id}` | Update alarm zone |
+| `DELETE` | `/api/zones/{id}` | Delete alarm zone |
+| `POST` | `/api/zones/check` | Multi-zone proximity check |
+| `POST` | `/api/alarm-events` | Log alarm event |
+| `GET` | `/api/alarm-events` | List alarm history (filterable) |
+| `DELETE` | `/api/alarm-events` | Clear alarm history |
 
 ```bash
 # Set an alarm point
@@ -119,16 +128,16 @@ curl -X POST http://localhost:8000/check-location \
   -d '{"latitude": 44.4270, "longitude": 26.1030}'
 ```
 
-> **Note**: The backend currently stores the alarm point in memory (global variable). Database persistence is planned.
+> **Note**: The backend stores the alarm point in memory for the legacy `/set-location` endpoint. For full persistence, use the `/api/zones` CRUD endpoints which store data in PostgreSQL.
 
 ## Testing
 
-> Tests are not yet implemented. This is on the roadmap.
+All tests pass locally and in CI.
 
 ```bash
-make test           # Run all tests (placeholder)
-make test-backend   # Backend tests (planned: pytest)
-make test-frontend  # Frontend tests (planned: Jest)
+make test           # Run all tests
+make test-backend   # Backend tests (pytest, 17 tests)
+make test-frontend  # Frontend tests (Jest, 17 tests)
 ```
 
 ## Code Quality
@@ -141,14 +150,19 @@ make lint-frontend  # eslint
 
 ## Database
 
-PostgreSQL is running in Docker but **no tables have been created yet**. The backend uses in-memory state. Database persistence is on the roadmap.
+PostgreSQL is running in Docker. Database tables are managed by **Alembic migrations** which run automatically on backend startup.
 
 ```bash
 make psql           # Connect to the database
 
 # Inside psql:
-\dt                 # List tables (none yet)
+\dt                 # List tables (alarm_zones, alarm_events)
 \q                  # Quit
+```
+
+To run migrations manually:
+```bash
+cd backend && alembic upgrade head
 ```
 
 To reset everything:
@@ -222,7 +236,7 @@ sudo systemctl start docker
 ### Map not showing / blank page
 
 - Make sure you access via `http://localhost:8081` (not an IP)
-- Leaflet CSS/JS is loaded from CDN — you need internet access
+- Leaflet CSS/JS is loaded from **cdnjs.cloudflare.com** CDN — you need internet access
 - Check browser console for errors
 
 ### Geolocation not working

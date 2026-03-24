@@ -21,6 +21,7 @@ A **proximity alarm web app** that:
 | **Containers** | Docker & Docker Compose |
 | **CI/CD** | GitHub Actions |
 | **Cloud** | Microsoft Azure (Container Apps, ACR, PostgreSQL, App Insights) |
+| **IaC** | Terraform (azurerm v4.65.0) |
 
 ## 🚀 Quick Start
 
@@ -100,14 +101,18 @@ proximity-alarm-app/
 - [x] Proximity detection (Haversine)
 - [x] Alarm trigger (sound + notification)
 - [x] User preferences (Settings screen)
+- [x] Dynamic URL configuration (no hardcoded localhost in deployed apps)
+- [x] Infrastructure-level CORS via Terraform
+- [x] Terraform azurerm provider upgraded to v4.65.0
+- [x] Backend auto-runs DB migrations on startup
+- [x] Global exception handler for reliable CORS on errors
 
 ### 🔜 Next Steps
-1. **Monitoring** — Application Insights integration + structured logging
+1. **Monitoring** — Application Insights integration + Azure dashboards
 2. **Security scanning** — Trivy container scanning, npm/pip audit
 3. **Staging environment** — deploy on push to main with manual prod approval
 4. **Simulate mode** — right-click map to fake GPS position for testing
 5. **User authentication** — login/register with JWT
-6. **Alarm history** — log every alarm event with timestamp
 
 ## 🎓 Learning Phases
 
@@ -115,7 +120,7 @@ proximity-alarm-app/
 |-------|-------|--------|
 | 1. Setup & Hello World | Docker, Git, project scaffolding | ✅ Complete |
 | 2. Development & Testing | Features, tests, DB integration | ✅ ~90% |
-| 3. CI/CD & DevOps | GitHub Actions, IaC, deployment | ✅ ~75% |
+| 3. CI/CD & DevOps | GitHub Actions, IaC, deployment, CORS | ✅ ~85% |
 | 4. Production Ready | Security, monitoring, go-live | ⏳ Not started |
 - Go live! 🚀
 

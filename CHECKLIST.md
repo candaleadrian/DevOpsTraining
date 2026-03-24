@@ -184,23 +184,45 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [x] Backend + Frontend Container Apps running in Azure
 - **Status**: ✅ Complete
 
-### 3.3 Deployment Workflows
+### 3.3 Dynamic Configuration & CORS
+- [x] Remove hardcoded localhost URLs from frontend services (zonesApi, historyApi, locationService)
+- [x] Frontend services use `getApiBaseUrl()` from config
+- [x] Backend CORS dynamized via `FRONTEND_URL` environment variable
+- [x] `FRONTEND_URL` env var set in Terraform (constructed from CAE domain)
+- [x] CI frontend pipeline gets backend URL from Terraform state dynamically
+- [x] Infrastructure-level CORS configured in Terraform (`cors` block in container app ingress)
+- [x] CORS visible and managed in Azure Portal
+- **Status**: ✅ Complete
+
+### 3.4 Provider & Infrastructure Upgrades
+- [x] Upgrade azurerm Terraform provider from v3.100 to v4.65.0 (latest stable)
+- [x] Update `features {}` block for v4 compatibility
+- [x] Terraform validate + plan + apply clean via CI pipeline
+- [x] Lock file (`.terraform.lock.hcl`) updated and committed
+- **Status**: ✅ Complete
+
+### 3.5 Backend Reliability
+- [x] Backend Dockerfile runs `alembic upgrade head` before starting uvicorn
+- [x] Global exception handler in FastAPI to prevent CORS masking on 500 errors
+- [x] Structured logging added to backend (`import logging`)
+- **Status**: ✅ Complete
+
+### 3.6 Deployment Workflows
 - [ ] Deploy to staging on push to main
 - [ ] Manual approval for production
 - **Status**: ⏳ Not Started
 
-### 3.4 Monitoring & Observability
-- [ ] Add Application Insights to backend
-- [ ] Structured logging
+### 3.7 Monitoring & Observability
+- [ ] Add Application Insights SDK to backend
 - [ ] Azure dashboards
 - **Status**: ⏳ Not Started
 
-### 3.5 Security Scanning
+### 3.8 Security Scanning
 - [ ] Trivy container scanning
 - [ ] `npm audit` and `pip audit`
 - **Status**: ⏳ Not Started
 
-**Phase 3 Complete?** � ~75% (CI + IaC + deployment done, monitoring/security next)
+**Phase 3 Complete?** 🟡 ~85% (CI + IaC + deployment + CORS + provider upgrade done, monitoring/security next)
 
 ---
 
@@ -232,21 +254,22 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ```
 Phase 1: Setup & Hello World          [██████████] 100%
-Phase 2: Development & Testing        [█████████░] 90%
-Phase 3: CI/CD & DevOps               [███████░░░] 75%
-Phase 4: Production Ready             [░░░░░░░░░░]  0%
+Phase 2: Development & Testing        [█████████░]  90%
+Phase 3: CI/CD & DevOps               [████████░░]  85%
+Phase 4: Production Ready             [░░░░░░░░░░]   0%
 ─────────────────────────────────────────────────
-Total Progress:                        [███████░░░] 66%
+Total Progress:                        [████████░░]  69%
 ```
 
 ---
 
 ## 📋 Next Steps (Immediate)
 
-1. **Monitoring** — Add Application Insights SDK to backend, structured logging
+1. **Monitoring** — Add Application Insights SDK to backend, Azure dashboards
 2. **Security scanning** — Trivy container scanning, npm/pip audit in CI
 3. **Staging environment** — Deploy on push to main, manual approval for production
 4. **Branch protection** — Require PR reviews before merging to main
+5. **Code coverage** — Increase backend test coverage to 80%+
 
 ---
 
