@@ -12,7 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to trigger proximity alarms when you enter alarm zones.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location in the background to trigger proximity alarms."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,17 +25,35 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "VIBRATE"
+      ],
+      "package": "com.proximityalarm.app",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDm1i3FsDg8Lq__WihtxjjXwZZx1NimYTY"
         }
       }
-    }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app uses your location to trigger proximity alarms when you enter alarm zones."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#8a5a44"
+        }
+      ]
+    ]
   }
 }

@@ -99,13 +99,13 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ### 2.3 Frontend Features
 - [x] HomeScreen — main dashboard with backend health status
-- [x] MapScreen — interactive Leaflet/OpenStreetMap on Expo Web
+- [x] MapScreen — cross-platform map (Leaflet on web, react-native-maps on Android)
   - [x] Tap to set alarm point
   - [x] Adjustable radius (± 100m buttons)
-  - [x] User position marker (green dot)
+  - [x] User position marker (green dot on web, native blue dot on Android)
   - [x] Proximity detection (Haversine client-side)
   - [x] Visual radius circle on map
-  - [x] Start/Stop monitoring (browser geolocation)
+  - [x] Start/Stop monitoring (platform-specific location tracking)
 - [x] SettingsScreen — alarm preferences
   - [x] Alarm mode: notification / sound / both
   - [x] Sound choice: beep / siren / chime
@@ -113,14 +113,22 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
   - [x] Test alarm button
 - [x] AlarmDetailScreen — placeholder
 - [x] Alarm trigger system
-  - [x] Web Audio API sound synthesis
-  - [x] Browser Notification API
+  - [x] Web Audio API sound synthesis (web)
+  - [x] Vibration patterns + expo-notifications (Android)
+  - [x] Browser Notification API (web)
   - [x] Cooldown to prevent spam
-  - [x] Preferences stored in localStorage
+  - [x] Preferences stored in localStorage (web) / AsyncStorage (Android)
 - [x] Save multiple alarm zones (frontend CRUD via zonesApi)
 - [x] Alarm history display (HistoryScreen with auto-refresh)
 - [x] Toast notifications for add/delete feedback
 - [x] Delete confirmation flow
+- [x] Cross-platform architecture (web + Android single codebase)
+  - [x] Platform-specific map component (PlatformMap.tsx / PlatformMap.native.tsx)
+  - [x] Platform-specific location service (locationTracker.ts / locationTracker.native.ts)
+  - [x] Platform-specific alarm trigger (alarmTrigger.ts / alarmTrigger.native.ts)
+  - [x] Platform-specific storage (alarmPreferences.ts / alarmPreferences.native.ts)
+  - [x] EAS Build config for Android APK
+  - [x] API URL auto-configuration per platform
 - **Status**: ✅ Complete
 
 ### 2.4 Frontend Testing
@@ -254,7 +262,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ```
 Phase 1: Setup & Hello World          [██████████] 100%
-Phase 2: Development & Testing        [█████████░]  90%
+Phase 2: Development & Testing        [█████████░]  95%
 Phase 3: CI/CD & DevOps               [████████░░]  85%
 Phase 4: Production Ready             [░░░░░░░░░░]   0%
 ─────────────────────────────────────────────────
@@ -287,6 +295,14 @@ Total Progress:                        [████████░░]  69%
 - Leaflet marker icons need explicit URLs (defaults break in bundlers)
 - Browser geolocation requires `localhost` or HTTPS
 - Web Audio API can synthesize alarm sounds without audio files
+
+### Cross-Platform Architecture (Web + Android)
+- Metro bundler auto-resolves `.native.ts` for Android/iOS, `.ts` for web (same import path)
+- Platform-specific services: storage (localStorage vs AsyncStorage), location (browser vs expo-location), alarm (Web Audio vs Vibration + push), map (Leaflet vs react-native-maps)
+- EAS Build generates Android APKs/AABs on Expo cloud infrastructure
+- `EXPO_PUBLIC_API_BASE_URL` env var configures backend URL per environment
+- Android emulator uses `10.0.2.2` to reach host machine's localhost
+- Shared types files (`.types.ts`) keep interfaces consistent across platforms
 
 ### Backend (FastAPI)
 - CORS middleware must be imported separately: `from fastapi.middleware.cors import CORSMiddleware`

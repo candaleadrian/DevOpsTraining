@@ -4,18 +4,19 @@ A hands-on DevOps learning project: build a proximity alarm app from scratch, co
 
 ## 🎯 What It Does
 
-A **proximity alarm web app** that:
-- Shows an interactive map (Leaflet + OpenStreetMap)
+A **cross-platform proximity alarm app** (web + Android) that:
+- Shows an interactive map (Leaflet on web, Google Maps on Android)
 - Lets you tap to place an alarm point with a configurable radius
-- Tracks your location via browser geolocation
-- Triggers a sound and/or browser notification when you enter the alarm zone
+- Tracks your location via GPS (browser geolocation on web, expo-location on Android)
+- Triggers alarms (Web Audio on web, vibration + push notifications on Android)
 - Alarm preferences (mode, sound, volume) configurable in Settings
+- Single codebase, platform-specific code resolved automatically via Metro bundler
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | React Native / Expo (Web), Leaflet, TypeScript |
+| **Frontend** | React Native / Expo (Web + Android), Leaflet (web), react-native-maps (Android), TypeScript |
 | **Backend** | FastAPI (Python 3.11) |
 | **Database** | PostgreSQL 15 |
 | **Containers** | Docker & Docker Compose |
@@ -44,15 +45,15 @@ make up
 ## 🗺️ Current Features
 
 ### Map Screen
-- Interactive OpenStreetMap via Leaflet
-- Tap to set an alarm point (blue marker + radius circle)
+- Interactive map (Leaflet/OpenStreetMap on web, Google Maps on Android)
+- Tap to set an alarm point (marker + radius circle)
 - Adjust radius with ± 100m buttons
-- Start/Stop location monitoring (browser GPS)
+- Start/Stop location monitoring (browser GPS on web, expo-location on Android)
 - Visual proximity status ("X m away" or "🔔 ALARM")
 
 ### Settings Screen
 - **Alarm mode**: Notification only, Sound only, or Both
-- **Sound**: Beep, Siren, or Chime (synthesized via Web Audio API)
+- **Sound**: Beep, Siren, or Chime (Web Audio API on web, vibration patterns on Android)
 - **Volume**: 20% – 100%
 - Test Alarm button to preview your selection
 
@@ -80,11 +81,13 @@ proximity-alarm-app/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── src/main.py         # API endpoints + Haversine logic
-├── frontend/               # Expo React Native app (Web)
+├── frontend/               # Expo React Native app (Web + Android)
 │   ├── Dockerfile
+│   ├── eas.json            # EAS Build config (Android APK/AAB)
 │   ├── src/
+│   │   ├── components/     # PlatformMap (Leaflet on web, react-native-maps on Android)
 │   │   ├── screens/        # MapScreen, HomeScreen, SettingsScreen
-│   │   ├── services/       # alarmTrigger, alarmPreferences, locationService
+│   │   ├── services/       # Platform-specific: alarmTrigger, alarmPreferences, locationTracker
 │   │   ├── navigation/     # Tab + stack navigation
 │   │   └── ui/             # Shared layout components
 │   └── app.json
@@ -106,12 +109,15 @@ proximity-alarm-app/
 - [x] Terraform azurerm provider upgraded to v4.65.0
 - [x] Backend auto-runs DB migrations on startup
 - [x] Global exception handler for reliable CORS on errors
+- [x] Cross-platform architecture (web + Android) from single codebase
+- [x] Platform-specific map (Leaflet / react-native-maps), location, alarm, and storage services
+- [x] EAS Build configuration for Android APK generation
 
 ### 🔜 Next Steps
-1. **Monitoring** — Application Insights integration + Azure dashboards
-2. **Security scanning** — Trivy container scanning, npm/pip audit
-3. **Staging environment** — deploy on push to main with manual prod approval
-4. **Simulate mode** — right-click map to fake GPS position for testing
+1. **Android APK build** — Run `cd frontend && npm run build:android` via EAS Build
+2. **Monitoring** — Application Insights integration + Azure dashboards
+3. **Security scanning** — Trivy container scanning, npm/pip audit
+4. **Staging environment** — deploy on push to main with manual prod approval
 5. **User authentication** — login/register with JWT
 
 ## 🎓 Learning Phases

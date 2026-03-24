@@ -75,22 +75,31 @@ make docker-build
 - **Backend**: Python files in `backend/src/` are volume-mounted → auto-reload via uvicorn
 - **Frontend**: `frontend/` is volume-mounted → Expo Web auto-reloads on save
 
-### 3. Frontend (Web)
+### 3. Frontend (Web + Android)
 
-The frontend runs as **Expo Web** (NOT native mobile). Open http://localhost:8081 in your browser.
+The frontend runs on **both web and Android** from a single Expo codebase.
+
+**Web** — Open http://localhost:8081 in your browser.
+
+**Android** — Run `npx expo start` then press `a`, or build an APK with `npm run build:android`.
 
 Key points:
-- Uses **Leaflet + OpenStreetMap** for the interactive map (react-native-maps does not work on Expo Web)
-- Browser geolocation requires `localhost` or HTTPS — access the app via `localhost:8081`, not an IP address
-- To simulate GPS position, use Chrome DevTools → Sensors → Location
+- Uses **Leaflet + OpenStreetMap** on web, **react-native-maps (Google Maps)** on Android
+- Platform-specific code is resolved automatically via Metro bundler (`.native.ts` for Android, `.ts` for web)
+- Browser geolocation on web, `expo-location` on Android
+- Web Audio API for alarm sounds on web, vibration + push notifications on Android
+- `EXPO_PUBLIC_API_BASE_URL` env var configures the backend URL per environment
+- Android emulator defaults to `10.0.2.2:8000` to reach host machine's localhost
 
 ### 4. Frontend Structure
 
 ```
 frontend/src/
+├── components/     # PlatformMap (.tsx for web/Leaflet, .native.tsx for Android/Google Maps)
 ├── navigation/     # AppNavigator (bottom tabs + stack)
 ├── screens/        # MapScreen, SettingsScreen, HomeScreen, AlarmDetailScreen
-├── services/       # alarmPreferences, alarmTrigger, locationService, health
+├── services/       # Platform-specific: alarmPreferences, alarmTrigger, locationTracker
+│                   # (.ts = web default, .native.ts = Android/iOS override)
 ├── ui/             # Reusable layout primitives
 ├── config/         # Theme, constants
 └── hooks/          # Custom hooks

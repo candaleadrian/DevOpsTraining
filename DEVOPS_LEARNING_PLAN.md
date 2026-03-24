@@ -3,7 +3,7 @@
 **Goal**: Build a production-ready React Native + Python/FastAPI mobile app with enterprise-grade DevOps practices, from Hello World to committed code reflected in live app.
 
 **Stack**: 
-- **Frontend**: React Native (Expo Web) with Leaflet + OpenStreetMap
+- **Frontend**: React Native (Expo) — Web + Android from single codebase (Leaflet on web, react-native-maps on Android)
 - **Backend**: Python/FastAPI
 - **Infrastructure**: Azure (Container Apps, PostgreSQL) — deployed ✅
 - **CI/CD**: GitHub + GitHub Actions ✅ (backend + frontend + infra pipelines active)
@@ -91,7 +91,7 @@ proximity-alarm-app/
 │       │   └── AppNavigator.tsx    # Bottom tabs + stack navigator
 │       ├── screens/
 │       │   ├── HomeScreen.tsx
-│       │   ├── MapScreen.tsx       # Leaflet map with multi-zone proximity
+│       │   ├── MapScreen.tsx       # Cross-platform map (uses PlatformMap component)
 │       │   ├── HistoryScreen.tsx   # Alarm history log
 │       │   ├── SettingsScreen.tsx  # Alarm preferences
 │       │   └── AlarmDetailScreen.tsx
@@ -441,7 +441,7 @@ pytest backend/tests/integration/ -v
 
 ### 2.4 Lessons Learned So Far
 
-- **react-native-maps doesn't work on Expo Web** — switched to Leaflet + OpenStreetMap
+- **react-native-maps doesn't work on Expo Web** — solved with platform-specific file resolution: Leaflet on web + react-native-maps on Android
 - **Two files with same screen name** caused confusion — keep one canonical export per screen
 - **CORSMiddleware must be explicitly imported** from `fastapi.middleware.cors`
 - **Browser geolocation requires localhost or HTTPS** — Docker port-mapping must use localhost
@@ -916,7 +916,7 @@ gh workflow run deploy-production.yml -f version=v1.0.0
 
 ### Frontend
 - **Framework**: React Native (Expo Web)
-- **Map**: Leaflet + OpenStreetMap (NOT react-native-maps — doesn't work on web)
+- **Map**: Leaflet + OpenStreetMap on web, react-native-maps (Google Maps) on Android — via PlatformMap component
 - **Audio**: Web Audio API (synthesized sounds)
 - **Notifications**: Browser Notification API
 - **State**: localStorage (for alarm preferences)

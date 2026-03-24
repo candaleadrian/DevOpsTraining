@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, ScrollView, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Animated } from 'react-native';
 import { fireAlarm, stopAlarm } from '../services/alarmTrigger';
 import { zonesApi, AlarmZone } from '../services/zonesApi';
 import { historyApi } from '../services/historyApi';
+import { watchPosition, clearWatch } from '../services/locationTracker';
+import PlatformMap from '../components/PlatformMap';
+import { ZONE_COLOURS } from '../components/PlatformMap.types';
 
 // Toast component for showing feedback
 function Toast({ message, type, onDone }: { message: string; type: 'success' | 'error'; onDone: () => void }) {
@@ -28,20 +31,6 @@ const toastStyles = StyleSheet.create({
   text: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
 
-// Leaflet CSS is injected once into the page head
-function useLeafletCSS() {
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const id = 'leaflet-css';
-    if (document.getElementById(id)) return;
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
-    document.head.appendChild(link);
-  }, []);
-}
-
 // Haversine distance (metres)
 function haversineMetres(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6_371_000;
@@ -56,19 +45,7 @@ function haversineMetres(lat1: number, lon1: number, lat2: number, lon2: number)
 
 type LatLng = { lat: number; lng: number };
 
-// Colours for zone circles
-const ZONE_COLOURS = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
-
 export function MapScreen() {
-  useLeafletCSS();
-
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const userMarkerRef = useRef<any>(null);
-  const zoneLayersRef = useRef<Map<number, { marker: any; circle: any }>>(new Map());
-  const pendingMarkerRef = useRef<any>(null);
-  const pendingCircleRef = useRef<any>(null);
-
   const [zones, setZones] = useState<AlarmZone[]>([]);
   const [pendingPoint, setPendingPoint] = useState<LatLng | null>(null);
   const [pendingRadius, setPendingRadius] = useState(500);
@@ -106,138 +83,6 @@ export function MapScreen() {
     loadZones();
   }, [loadZones]);
 
-  // ---- Initialise Leaflet map --------------------------------------------
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    let cancelled = false;
-
-    (async () => {
-      const L = await import('leaflet');
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-      });
-
-      if (cancelled || !mapContainerRef.current || mapRef.current) return;
-
-      const map = L.map(mapContainerRef.current).setView([44.4268, 26.1025], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map);
-
-      map.on('click', (e: any) => {
-        setPendingPoint({ lat: e.latlng.lat, lng: e.latlng.lng });
-      });
-
-      mapRef.current = map;
-
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            map.setView([pos.coords.latitude, pos.coords.longitude], 14);
-            setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          },
-          () => {},
-          { enableHighAccuracy: true },
-        );
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, []);
-
-  // ---- Draw saved zones on map -------------------------------------------
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    (async () => {
-      const L = await import('leaflet');
-      const map = mapRef.current;
-
-      // Remove old zone layers
-      zoneLayersRef.current.forEach(({ marker, circle }) => {
-        map.removeLayer(marker);
-        map.removeLayer(circle);
-      });
-      zoneLayersRef.current.clear();
-
-      zones.forEach((z, i) => {
-        const colour = ZONE_COLOURS[i % ZONE_COLOURS.length];
-        const marker = L.marker([z.latitude, z.longitude])
-          .addTo(map)
-          .bindPopup(`<b>${z.name}</b><br>${z.radius_meters}m radius`);
-        const circle = L.circle([z.latitude, z.longitude], {
-          radius: z.radius_meters,
-          color: colour,
-          fillColor: colour,
-          fillOpacity: 0.12,
-        }).addTo(map);
-        zoneLayersRef.current.set(z.id, { marker, circle });
-      });
-    })();
-  }, [zones]);
-
-  // ---- Draw pending point (before save) ----------------------------------
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    (async () => {
-      const L = await import('leaflet');
-      const map = mapRef.current;
-
-      if (pendingMarkerRef.current) map.removeLayer(pendingMarkerRef.current);
-      if (pendingCircleRef.current) map.removeLayer(pendingCircleRef.current);
-      pendingMarkerRef.current = null;
-      pendingCircleRef.current = null;
-
-      if (!pendingPoint) return;
-
-      const pendingIcon = L.icon({
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-      });
-
-      pendingMarkerRef.current = L.marker([pendingPoint.lat, pendingPoint.lng], { icon: pendingIcon, opacity: 0.6 })
-        .addTo(map)
-        .bindPopup('New zone (unsaved)');
-
-      pendingCircleRef.current = L.circle([pendingPoint.lat, pendingPoint.lng], {
-        radius: pendingRadius,
-        color: '#9ca3af',
-        dashArray: '6',
-        fillColor: '#9ca3af',
-        fillOpacity: 0.08,
-      }).addTo(map);
-    })();
-  }, [pendingPoint, pendingRadius]);
-
-  // ---- Draw user position marker -----------------------------------------
-  useEffect(() => {
-    if (!mapRef.current || !userPos) return;
-
-    (async () => {
-      const L = await import('leaflet');
-      const map = mapRef.current;
-
-      if (userMarkerRef.current) map.removeLayer(userMarkerRef.current);
-
-      const userIcon = L.divIcon({
-        html: '<div style="background:#22c55e;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 6px rgba(0,0,0,.3)"></div>',
-        className: '',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-      });
-      userMarkerRef.current = L.marker([userPos.lat, userPos.lng], { icon: userIcon })
-        .addTo(map)
-        .bindPopup('You are here');
-    })();
-  }, [userPos]);
-
   // ---- Check proximity against all zones ---------------------------------
   useEffect(() => {
     if (!userPos || zones.length === 0) {
@@ -246,7 +91,6 @@ export function MapScreen() {
       return;
     }
 
-    // Client-side proximity check for instant feedback
     const results = zones
       .filter((z) => z.is_active)
       .map((z) => {
@@ -259,12 +103,10 @@ export function MapScreen() {
     const alarming = results.filter((r) => r.alarm);
     const alarmingIds = new Set(alarming.map((r) => r.zone_id));
 
-    // Fire alarm for newly entered zones
     for (const r of alarming) {
       if (!firedAlarmsRef.current.has(r.zone_id)) {
         fireAlarm(r.distance, zones.find((z) => z.id === r.zone_id)?.radius_meters ?? 500);
         firedAlarmsRef.current.add(r.zone_id);
-        // Log "entered" event
         historyApi.create({
           zone_id: r.zone_id,
           zone_name: r.name,
@@ -276,10 +118,8 @@ export function MapScreen() {
       }
     }
 
-    // Stop alarm if we left all zones
     for (const id of firedAlarmsRef.current) {
       if (!alarmingIds.has(id)) {
-        // Log "exited" event
         const zone = zones.find((z) => z.id === id);
         const pr = results.find((r) => r.zone_id === id);
         historyApi.create({
@@ -337,43 +177,34 @@ export function MapScreen() {
   // ---- Start / stop live tracking ----------------------------------------
   const toggleMonitoring = useCallback(() => {
     if (monitoring && watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
+      clearWatch(watchId);
       setWatchId(null);
       setMonitoring(false);
       return;
     }
-    if (!('geolocation' in navigator)) return;
-    const id = navigator.geolocation.watchPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {},
-      { enableHighAccuracy: true },
-    );
+    const id = watchPosition((pos) => setUserPos(pos));
     setWatchId(id);
     setMonitoring(true);
   }, [monitoring, watchId]);
 
   // ---- Render ------------------------------------------------------------
-  if (Platform.OS !== 'web') {
-    return (
-      <View style={styles.fallback}>
-        <Text>Map is only available on web for now.</Text>
-      </View>
-    );
-  }
-
   const alarmingZones = proximityResults.filter((r) => r.alarm);
 
   return (
     <View style={styles.container}>
-      {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
-      {/* Map */}
-      <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0 }} />
+      {/* Platform-specific map */}
+      <PlatformMap
+        zones={zones}
+        userPos={userPos}
+        pendingPoint={pendingPoint}
+        pendingRadius={pendingRadius}
+        onMapPress={setPendingPoint}
+      />
 
       {/* Controls */}
       <View style={styles.controls}>
-        {/* Pending zone form */}
         {pendingPoint && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>New Alarm Zone</Text>
@@ -404,7 +235,6 @@ export function MapScreen() {
           </View>
         )}
 
-        {/* Monitoring toggle */}
         <Pressable
           style={[styles.btn, monitoring ? styles.btnDanger : styles.btnPrimary, { alignSelf: 'center' }]}
           onPress={toggleMonitoring}
@@ -412,14 +242,12 @@ export function MapScreen() {
           <Text style={styles.btnText}>{monitoring ? 'Stop Monitoring' : 'Start Monitoring'}</Text>
         </Pressable>
 
-        {/* Alarm status */}
         {alarmingZones.length > 0 && (
           <Text style={[styles.status, styles.statusAlarm]}>
             🔔 ALARM — Inside: {alarmingZones.map((r) => `${r.name} (${Math.round(r.distance)}m)`).join(', ')}
           </Text>
         )}
 
-        {/* Saved zones list */}
         {zones.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Saved Zones ({zones.length})</Text>
@@ -480,7 +308,6 @@ const styles = StyleSheet.create({
   status: { fontSize: 14, color: '#1f2a37', textAlign: 'center' },
   statusAlarm: { color: '#dc2626', fontWeight: '700' },
   hint: { fontSize: 13, color: '#7a8793', textAlign: 'center' },
-  fallback: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 10,
