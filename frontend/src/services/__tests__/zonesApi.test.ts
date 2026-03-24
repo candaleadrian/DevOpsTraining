@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { zonesApi } from '../zonesApi';
 
+jest.mock('../../config/api', () => ({
+  getApiBaseUrl: () => 'http://localhost:8000',
+}));
+
 jest.mock('axios', () => {
   const mockInstance = {
     get: jest.fn(),
