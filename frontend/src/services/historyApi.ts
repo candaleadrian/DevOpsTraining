@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../config/api';
 
-const API = axios.create({ baseURL: 'http://localhost:8000' });
+const API = axios.create({ baseURL: getApiBaseUrl() ?? '' });
 
 export interface AlarmEvent {
   id: number;

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../config/api';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = getApiBaseUrl() ?? '';
 
 export const setLocation = async (latitude, longitude, radius) => {
   try {
