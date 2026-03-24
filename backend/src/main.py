@@ -1,6 +1,8 @@
 import os
+import logging
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from math import radians, cos, sin, sqrt, atan2
 from typing import List, Optional
@@ -11,6 +13,8 @@ from datetime import datetime, timezone
 from src.db.database import get_db
 from src.models.alarm_zone import AlarmZone
 from src.models.alarm_event import AlarmEvent
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Proximity Alarm API", version="0.2.0")
 
@@ -32,6 +36,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error("Unhandled error on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 # ---------------------------------------------------------------------------
