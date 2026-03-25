@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import { ScreenLayout } from '../ui/ScreenLayout';
 import {
   AlarmMode,
@@ -102,6 +102,27 @@ export function SettingsScreen() {
             </Text>
           </Pressable>
         ))}
+        <Pressable
+          style={[s.chip, !RADIUS_STEPS.includes(prefs.radiusStep) && s.chipActive]}
+          onPress={() => {}}
+        >
+          <Text style={[s.chipText, !RADIUS_STEPS.includes(prefs.radiusStep) && s.chipTextActive]}>
+            Custom
+          </Text>
+        </Pressable>
+      </View>
+      <View style={s.customRow}>
+        <TextInput
+          style={s.customInput}
+          keyboardType="numeric"
+          placeholder="Custom meters"
+          value={!RADIUS_STEPS.includes(prefs.radiusStep) ? String(prefs.radiusStep) : ''}
+          onChangeText={(text) => {
+            const num = parseInt(text, 10);
+            if (num > 0) update({ radiusStep: num });
+          }}
+        />
+        <Text style={s.customUnit}>m</Text>
       </View>
 
       {/* Test button */}
@@ -120,6 +141,9 @@ const s = StyleSheet.create({
   chipActive: { backgroundColor: '#8a5a44' },
   chipText: { fontSize: 14, color: '#1f2a37', fontWeight: '600' },
   chipTextActive: { color: '#fff' },
+  customRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 6 },
+  customInput: { borderWidth: 1, borderColor: '#c5a88a', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, width: 130, backgroundColor: '#fff' },
+  customUnit: { fontSize: 14, fontWeight: '600', color: '#8a5a44' },
   testBtn: { marginTop: 8, backgroundColor: '#8a5a44', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   testBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });
