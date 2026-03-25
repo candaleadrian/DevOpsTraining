@@ -5,10 +5,12 @@ on:
     branches: [master]
     paths:
       - "infra/terraform/**"
+      - '.github/workflows/infra-terraform.yml'
   pull_request:
     branches: [master]
     paths:
       - "infra/terraform/**"
+      - '.github/workflows/infra-terraform.yml'
 
 permissions:
   contents: read
