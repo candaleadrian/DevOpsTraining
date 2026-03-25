@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Animated } fr
 import { fireAlarm, stopAlarm } from '../services/alarmTrigger';
 import { zonesApi, AlarmZone } from '../services/zonesApi';
 import { historyApi } from '../services/historyApi';
-import { watchPosition, clearWatch } from '../services/locationTracker';
+import { watchPosition, clearWatch, startBackgroundTracking, stopBackgroundTracking } from '../services/locationTracker';
 import PlatformMap from '../components/PlatformMap';
 import { ZONE_COLOURS, PlatformMapRef } from '../components/PlatformMap.types';
 import LocationSearch from '../components/LocationSearch';
@@ -55,6 +55,7 @@ export function MapScreen() {
   const [userPos, setUserPos] = useState<LatLng | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
   const [monitoring, setMonitoring] = useState(false);
+  const bgCleanupRef = useRef<(() => void) | null>(null);
   const [proximityResults, setProximityResults] = useState<
     { zone_id: number; name: string; distance: number; alarm: boolean }[]
   >([]);
@@ -252,11 +253,21 @@ export function MapScreen() {
       clearWatch(watchId);
       setWatchId(null);
       setMonitoring(false);
+      // Stop background tracking
+      if (bgCleanupRef.current) {
+        bgCleanupRef.current();
+        bgCleanupRef.current = null;
+      }
+      stopBackgroundTracking();
       return;
     }
     const id = watchPosition((pos) => setUserPos(pos));
     setWatchId(id);
     setMonitoring(true);
+    // Also start background tracking (native only, no-op on web)
+    startBackgroundTracking((pos) => setUserPos(pos)).then((cleanup) => {
+      bgCleanupRef.current = cleanup;
+    });
   }, [monitoring, watchId]);
 
   // ---- Render ------------------------------------------------------------

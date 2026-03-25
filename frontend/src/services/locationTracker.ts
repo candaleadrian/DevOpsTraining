@@ -29,3 +29,13 @@ export function watchPosition(
 export function clearWatch(id: number): void {
   navigator.geolocation.clearWatch(id);
 }
+
+// Background tracking is not available on web — provide no-op stubs
+export async function startBackgroundTracking(
+  _onLocation?: LocationCallback,
+  _onError?: ErrorCallback,
+): Promise<() => void> {
+  return () => {};
+}
+
+export async function stopBackgroundTracking(): Promise<void> {}
