@@ -53,6 +53,28 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
 
       const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([44.4268, 26.1025], 13);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      // "Locate me" button
+      const LocateControl = L.Control.extend({
+        options: { position: 'bottomright' as const },
+        onAdd() {
+          const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+          btn.innerHTML = '<a href="#" title="Go to my location" role="button" aria-label="Go to my location" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:18px;text-decoration:none;color:#333;background:#fff;cursor:pointer;">⦿</a>';
+          L.DomEvent.disableClickPropagation(btn);
+          btn.addEventListener('click', (e: Event) => {
+            e.preventDefault();
+            if ('geolocation' in navigator) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 15, { animate: true }),
+                () => {},
+                { enableHighAccuracy: true },
+              );
+            }
+          });
+          return btn;
+        },
+      });
+      new LocateControl().addTo(map);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(map);
