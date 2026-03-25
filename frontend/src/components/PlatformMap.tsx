@@ -51,7 +51,8 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
 
       if (cancelled || !mapContainerRef.current || mapRef.current) return;
 
-      const map = L.map(mapContainerRef.current).setView([44.4268, 26.1025], 13);
+      const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([44.4268, 26.1025], 13);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(map);
