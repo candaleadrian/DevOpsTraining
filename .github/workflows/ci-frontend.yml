@@ -136,3 +136,10 @@ jobs:
             -t ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend:${{ github.sha }} \
             ./frontend
           docker push ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend --all-tags
+
+      - name: Deploy new revision to Container Apps
+        run: |
+          az containerapp update \
+            --name ca-frontend-proximity-alarm-dev \
+            --resource-group rg-proximity-alarm-dev \
+            --image ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-frontend:${{ github.sha }}
