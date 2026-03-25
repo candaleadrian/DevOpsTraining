@@ -131,7 +131,8 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 50 : 10,
     left: 10,
     right: 10,
-    zIndex: 100,
+    zIndex: 1100,
+    elevation: 10,
   },
   inputRow: {
     flexDirection: 'row',

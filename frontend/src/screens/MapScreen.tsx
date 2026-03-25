@@ -313,7 +313,7 @@ export function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f4ee' },
-  mapWrapper: { flex: 1, position: 'relative' },
+  mapWrapper: { flex: 1, position: 'relative', zIndex: 0 },
   controls: { padding: 12, gap: 10, backgroundColor: '#fffdf8', borderTopWidth: 1, borderTopColor: '#e7d8c9' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   label: { fontSize: 15, fontWeight: '600', color: '#1f2a37', minWidth: 120, textAlign: 'center' },
