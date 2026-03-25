@@ -57,6 +57,7 @@ resource "azurerm_container_app" "backend" {
     cors {
       allowed_origins = [
         "https://ca-frontend-${var.resource_prefix}.${azurerm_container_app_environment.main.default_domain}",
+        "https://ca-frontend-${var.resource_prefix}--*.${azurerm_container_app_environment.main.default_domain}",
         "http://localhost:8081",
         "http://localhost:19006",
       ]
