@@ -106,3 +106,10 @@ jobs:
             --name ca-backend-proximity-alarm-dev \
             --resource-group rg-proximity-alarm-dev \
             --image ${{ secrets.ACR_NAME }}.azurecr.io/proximity-alarm-backend:${{ github.sha }}
+
+      - name: Purge old backend images (keep last 2)
+        run: |
+          az acr run \
+            --cmd "acr purge --filter 'proximity-alarm-backend:.*' --ago 0d --keep 2 --untagged" \
+            --registry ${{ secrets.ACR_NAME }} \
+            /dev/null
