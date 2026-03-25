@@ -5,6 +5,10 @@ export interface LatLng {
   lng: number;
 }
 
+export interface PlatformMapRef {
+  animateTo: (lat: number, lng: number) => void;
+}
+
 export interface PlatformMapProps {
   zones: AlarmZone[];
   userPos: LatLng | null;

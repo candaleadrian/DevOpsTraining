@@ -1,7 +1,7 @@
 // PlatformMap — web implementation using Leaflet
 
-import React, { useEffect, useRef } from 'react';
-import { PlatformMapProps, ZONE_COLOURS } from './PlatformMap.types';
+import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { PlatformMapProps, PlatformMapRef, ZONE_COLOURS } from './PlatformMap.types';
 
 // Leaflet CSS injected once
 function useLeafletCSS() {
@@ -16,7 +16,10 @@ function useLeafletCSS() {
   }, []);
 }
 
-export default function PlatformMap({ zones, userPos, pendingPoint, pendingRadius, onMapPress }: PlatformMapProps) {
+const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function PlatformMap(
+  { zones, userPos, pendingPoint, pendingRadius, onMapPress },
+  ref,
+) {
   useLeafletCSS();
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -25,6 +28,13 @@ export default function PlatformMap({ zones, userPos, pendingPoint, pendingRadiu
   const zoneLayersRef = useRef<Map<number, { marker: any; circle: any }>>(new Map());
   const pendingMarkerRef = useRef<any>(null);
   const pendingCircleRef = useRef<any>(null);
+
+  // Expose animateTo method to parent
+  useImperativeHandle(ref, () => ({
+    animateTo: (lat: number, lng: number) => {
+      mapRef.current?.setView([lat, lng], 15, { animate: true });
+    },
+  }));
 
   // Initialise Leaflet map
   useEffect(() => {
@@ -152,4 +162,6 @@ export default function PlatformMap({ zones, userPos, pendingPoint, pendingRadiu
   }, [userPos]);
 
   return <div ref={mapContainerRef} style={{ flex: 1, minHeight: 0 }} />;
-}
+});
+
+export default PlatformMap;

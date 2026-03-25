@@ -1,10 +1,10 @@
 // PlatformMap — native implementation using react-native-maps
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { StyleSheet } from 'react-native';
 import MapView, { Marker, Circle, MapPressEvent, Region } from 'react-native-maps';
 import { getCurrentPosition } from '../services/locationTracker';
-import { PlatformMapProps, ZONE_COLOURS } from './PlatformMap.types';
+import { PlatformMapProps, PlatformMapRef, ZONE_COLOURS } from './PlatformMap.types';
 
 const DEFAULT_REGION: Region = {
   latitude: 44.4268,
@@ -13,8 +13,23 @@ const DEFAULT_REGION: Region = {
   longitudeDelta: 0.05,
 };
 
-export default function PlatformMapNative({ zones, userPos, pendingPoint, pendingRadius, onMapPress }: PlatformMapProps) {
+const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function PlatformMapNative(
+  { zones, userPos, pendingPoint, pendingRadius, onMapPress },
+  ref,
+) {
   const mapRef = useRef<MapView>(null);
+
+  // Expose animateTo method to parent
+  useImperativeHandle(ref, () => ({
+    animateTo: (lat: number, lng: number) => {
+      mapRef.current?.animateToRegion({
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    },
+  }));
 
   // Centre on user location at mount
   useEffect(() => {
@@ -98,7 +113,9 @@ export default function PlatformMapNative({ zones, userPos, pendingPoint, pendin
       )}
     </MapView>
   );
-}
+});
+
+export default PlatformMapNative;
 
 const styles = StyleSheet.create({
   map: { flex: 1 },

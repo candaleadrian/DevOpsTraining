@@ -5,7 +5,8 @@ import { zonesApi, AlarmZone } from '../services/zonesApi';
 import { historyApi } from '../services/historyApi';
 import { watchPosition, clearWatch } from '../services/locationTracker';
 import PlatformMap from '../components/PlatformMap';
-import { ZONE_COLOURS } from '../components/PlatformMap.types';
+import { ZONE_COLOURS, PlatformMapRef } from '../components/PlatformMap.types';
+import LocationSearch from '../components/LocationSearch';
 
 // Toast component for showing feedback
 function Toast({ message, type, onDone }: { message: string; type: 'success' | 'error'; onDone: () => void }) {
@@ -59,6 +60,9 @@ export function MapScreen() {
 
   // Track which zones we've already fired alarms for
   const firedAlarmsRef = useRef<Set<number>>(new Set());
+
+  // Map ref for programmatic panning
+  const mapRef = useRef<PlatformMapRef>(null);
 
   // Toast feedback
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -174,6 +178,13 @@ export function MapScreen() {
     }
   }, [loadZones, zones, showToast]);
 
+  // ---- Handle location search selection -----------------------------------
+  const handleSearchSelect = useCallback((lat: number, lng: number, name: string) => {
+    mapRef.current?.animateTo(lat, lng);
+    setPendingPoint({ lat, lng });
+    setPendingName(name);
+  }, []);
+
   // ---- Start / stop live tracking ----------------------------------------
   const toggleMonitoring = useCallback(() => {
     if (monitoring && watchId !== null) {
@@ -194,14 +205,18 @@ export function MapScreen() {
     <View style={styles.container}>
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
-      {/* Platform-specific map */}
-      <PlatformMap
-        zones={zones}
-        userPos={userPos}
-        pendingPoint={pendingPoint}
-        pendingRadius={pendingRadius}
-        onMapPress={setPendingPoint}
-      />
+      {/* Platform-specific map with search overlay */}
+      <View style={styles.mapWrapper}>
+        <PlatformMap
+          ref={mapRef}
+          zones={zones}
+          userPos={userPos}
+          pendingPoint={pendingPoint}
+          pendingRadius={pendingRadius}
+          onMapPress={setPendingPoint}
+        />
+        <LocationSearch onSelect={handleSearchSelect} />
+      </View>
 
       {/* Controls */}
       <View style={styles.controls}>
@@ -298,6 +313,7 @@ export function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f4ee' },
+  mapWrapper: { flex: 1, position: 'relative' },
   controls: { padding: 12, gap: 10, backgroundColor: '#fffdf8', borderTopWidth: 1, borderTopColor: '#e7d8c9' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   label: { fontSize: 15, fontWeight: '600', color: '#1f2a37', minWidth: 120, textAlign: 'center' },
