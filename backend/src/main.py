@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
@@ -29,9 +30,19 @@ _extra_origin = os.environ.get("FRONTEND_URL")
 if _extra_origin:
     _cors_origins.append(_extra_origin)
 
+# Build a regex that also matches revision-specific URLs (e.g. --0000002 suffix)
+# so new Container App revisions don't break CORS.
+_cors_origin_regex = None
+if _extra_origin:
+    # e.g. https://ca-frontend-xxx.domain -> https://ca-frontend-xxx(--[a-z0-9]+)?\.domain
+    escaped = re.escape(_extra_origin)
+    # Insert optional revision suffix before the first dot after the app name
+    _cors_origin_regex = escaped.replace(r"\.", r"(--[a-z0-9]+)?\.", 1)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    allow_origin_regex=_cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
