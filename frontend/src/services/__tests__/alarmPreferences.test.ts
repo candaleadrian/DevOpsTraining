@@ -27,6 +27,7 @@ describe('alarmPreferences', () => {
       mode: 'both',
       sound: 'beep',
       volume: 0.8,
+      radiusStep: 100,
     });
   });
 
@@ -64,6 +65,6 @@ describe('alarmPreferences', () => {
   test('getAlarmPreferences handles corrupted localStorage gracefully', () => {
     mockStorage['alarm_preferences'] = '{{invalid json}}';
     const prefs = getAlarmPreferences();
-    expect(prefs).toEqual({ mode: 'both', sound: 'beep', volume: 0.8 });
+    expect(prefs).toEqual({ mode: 'both', sound: 'beep', volume: 0.8, radiusStep: 100 });
   });
 });

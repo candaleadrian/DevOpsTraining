@@ -7,6 +7,7 @@ import { watchPosition, clearWatch } from '../services/locationTracker';
 import PlatformMap from '../components/PlatformMap';
 import { ZONE_COLOURS, PlatformMapRef } from '../components/PlatformMap.types';
 import LocationSearch from '../components/LocationSearch';
+import { getAlarmPreferences, subscribeAlarmPreferences } from '../services/alarmPreferences';
 
 // Toast component for showing feedback
 function Toast({ message, type, onDone }: { message: string; type: 'success' | 'error'; onDone: () => void }) {
@@ -72,6 +73,16 @@ export function MapScreen() {
 
   // Pending delete confirmation
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  // Editing state
+  const [editingZone, setEditingZone] = useState<AlarmZone | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editRadius, setEditRadius] = useState(500);
+  const [repositioning, setRepositioning] = useState(false);
+
+  // Radius step from preferences
+  const [radiusStep, setRadiusStep] = useState(() => getAlarmPreferences().radiusStep);
+  useEffect(() => subscribeAlarmPreferences((p) => setRadiusStep(p.radiusStep)), []);
 
   // ---- Load saved zones on mount -----------------------------------------
   const loadZones = useCallback(async () => {
@@ -181,8 +192,58 @@ export function MapScreen() {
   // ---- Handle location search selection -----------------------------------
   const handleSearchSelect = useCallback((lat: number, lng: number, name: string) => {
     mapRef.current?.animateTo(lat, lng);
-    setPendingPoint({ lat, lng });
-    setPendingName(name);
+    if (repositioning && editingZone) {
+      setEditingZone({ ...editingZone, latitude: lat, longitude: lng });
+    } else {
+      setPendingPoint({ lat, lng });
+      setPendingName(name);
+    }
+  }, [repositioning, editingZone]);
+
+  // ---- Handle map press (new zone OR repositioning) -----------------------
+  const handleMapPress = useCallback((pos: LatLng) => {
+    if (repositioning && editingZone) {
+      setEditingZone({ ...editingZone, latitude: pos.lat, longitude: pos.lng });
+    } else {
+      setPendingPoint(pos);
+    }
+  }, [repositioning, editingZone]);
+
+  // ---- Start editing a zone -----------------------------------------------
+  const startEditing = useCallback((zone: AlarmZone) => {
+    setEditingZone(zone);
+    setEditName(zone.name);
+    setEditRadius(zone.radius_meters);
+    setRepositioning(false);
+    setConfirmDeleteId(null);
+    setPendingPoint(null);
+  }, []);
+
+  // ---- Save edited zone ---------------------------------------------------
+  const saveEdit = useCallback(async () => {
+    if (!editingZone) return;
+    const name = editName.trim() || editingZone.name;
+    try {
+      await zonesApi.update(editingZone.id, {
+        name,
+        radius_meters: editRadius,
+        latitude: editingZone.latitude,
+        longitude: editingZone.longitude,
+      });
+      setEditingZone(null);
+      setRepositioning(false);
+      await loadZones();
+      showToast(`"${name}" updated`);
+    } catch (e) {
+      console.error('Failed to update zone:', e);
+      showToast('Failed to update zone', 'error');
+    }
+  }, [editingZone, editName, editRadius, loadZones, showToast]);
+
+  // ---- Cancel editing -----------------------------------------------------
+  const cancelEdit = useCallback(() => {
+    setEditingZone(null);
+    setRepositioning(false);
   }, []);
 
   // ---- Start / stop live tracking ----------------------------------------
@@ -211,9 +272,11 @@ export function MapScreen() {
           ref={mapRef}
           zones={zones}
           userPos={userPos}
-          pendingPoint={pendingPoint}
-          pendingRadius={pendingRadius}
-          onMapPress={setPendingPoint}
+          pendingPoint={repositioning && editingZone
+            ? { lat: editingZone.latitude, lng: editingZone.longitude }
+            : pendingPoint}
+          pendingRadius={repositioning && editingZone ? editRadius : pendingRadius}
+          onMapPress={handleMapPress}
         />
         <LocationSearch onSelect={handleSearchSelect} />
       </View>
@@ -231,12 +294,12 @@ export function MapScreen() {
               onChangeText={setPendingName}
             />
             <View style={styles.row}>
-              <Pressable style={styles.btn} onPress={() => setPendingRadius((r) => Math.max(50, r - 100))}>
-                <Text style={styles.btnText}>− 100 m</Text>
+              <Pressable style={styles.btn} onPress={() => setPendingRadius((r) => Math.max(50, r - radiusStep))}>
+                <Text style={styles.btnText}>− {radiusStep} m</Text>
               </Pressable>
               <Text style={styles.label}>Radius: {pendingRadius} m</Text>
-              <Pressable style={styles.btn} onPress={() => setPendingRadius((r) => r + 100)}>
-                <Text style={styles.btnText}>+ 100 m</Text>
+              <Pressable style={styles.btn} onPress={() => setPendingRadius((r) => r + radiusStep)}>
+                <Text style={styles.btnText}>+ {radiusStep} m</Text>
               </Pressable>
             </View>
             <View style={styles.row}>
@@ -266,18 +329,66 @@ export function MapScreen() {
         {zones.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Saved Zones ({zones.length})</Text>
-            <ScrollView style={{ maxHeight: 150 }}>
+            <ScrollView style={{ maxHeight: 200 }}>
               {zones.map((z, i) => {
                 const pr = proximityResults.find((r) => r.zone_id === z.id);
                 const isConfirming = confirmDeleteId === z.id;
+                const isEditing = editingZone?.id === z.id;
+
+                if (isEditing) {
+                  return (
+                    <View key={z.id} style={styles.editCard}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Zone name"
+                        placeholderTextColor="#9ca3af"
+                        value={editName}
+                        onChangeText={setEditName}
+                      />
+                      <View style={styles.row}>
+                        <Pressable style={styles.btn} onPress={() => setEditRadius((r) => Math.max(50, r - radiusStep))}>
+                          <Text style={styles.btnText}>− {radiusStep} m</Text>
+                        </Pressable>
+                        <Text style={styles.label}>Radius: {editRadius} m</Text>
+                        <Pressable style={styles.btn} onPress={() => setEditRadius((r) => r + radiusStep)}>
+                          <Text style={styles.btnText}>+ {radiusStep} m</Text>
+                        </Pressable>
+                      </View>
+                      <Pressable
+                        style={[styles.btn, repositioning ? styles.btnDanger : styles.btnSecondary]}
+                        onPress={() => {
+                          setRepositioning(!repositioning);
+                          if (!repositioning) {
+                            mapRef.current?.animateTo(editingZone!.latitude, editingZone!.longitude);
+                          }
+                        }}
+                      >
+                        <Text style={styles.btnText}>
+                          {repositioning ? '📍 Tap map for new position…' : '📍 Reposition'}
+                        </Text>
+                      </Pressable>
+                      <View style={styles.row}>
+                        <Pressable style={[styles.btn, styles.btnPrimary]} onPress={saveEdit}>
+                          <Text style={styles.btnText}>Save</Text>
+                        </Pressable>
+                        <Pressable style={styles.btn} onPress={cancelEdit}>
+                          <Text style={styles.btnText}>Cancel</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                }
+
                 return (
                   <View key={z.id} style={styles.zoneRow}>
                     <View
                       style={[styles.dot, { backgroundColor: ZONE_COLOURS[i % ZONE_COLOURS.length] }]}
                     />
-                    <Text style={styles.zoneName} numberOfLines={1}>
-                      {z.name}
-                    </Text>
+                    <Pressable style={{ flex: 1 }} onPress={() => startEditing(z)}>
+                      <Text style={styles.zoneName} numberOfLines={1}>
+                        {z.name}
+                      </Text>
+                    </Pressable>
                     <Text style={styles.zoneInfo}>
                       {z.radius_meters}m
                       {pr ? ` · ${Math.round(pr.distance)}m away` : ''}
@@ -351,4 +462,14 @@ const styles = StyleSheet.create({
   confirmYes: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   confirmText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   confirmCancel: { color: '#7a8793', fontSize: 12, fontWeight: '600' },
+  editCard: {
+    backgroundColor: '#fef9f0',
+    borderRadius: 8,
+    padding: 10,
+    gap: 8,
+    marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#d4a574',
+  },
+  btnSecondary: { backgroundColor: '#6b7280' },
 });

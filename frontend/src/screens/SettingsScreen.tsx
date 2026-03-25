@@ -25,6 +25,8 @@ const SOUNDS: { value: AlarmSound; label: string }[] = [
 
 const VOLUMES = [0.2, 0.4, 0.6, 0.8, 1.0];
 
+const RADIUS_STEPS = [10, 25, 50, 100, 250, 500];
+
 export function SettingsScreen() {
   const [prefs, setPrefs] = useState<AlarmPreferences>(getAlarmPreferences);
 
@@ -81,6 +83,22 @@ export function SettingsScreen() {
           >
             <Text style={[s.chipText, prefs.volume === v && s.chipTextActive]}>
               {Math.round(v * 100)}%
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Radius step */}
+      <Text style={s.sectionTitle}>Radius step</Text>
+      <View style={s.row}>
+        {RADIUS_STEPS.map((step) => (
+          <Pressable
+            key={step}
+            style={[s.chip, prefs.radiusStep === step && s.chipActive]}
+            onPress={() => update({ radiusStep: step })}
+          >
+            <Text style={[s.chipText, prefs.radiusStep === step && s.chipTextActive]}>
+              {step} m
             </Text>
           </Pressable>
         ))}
