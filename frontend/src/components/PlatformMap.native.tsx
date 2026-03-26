@@ -60,7 +60,7 @@ const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function 
       showsUserLocation
       showsMyLocationButton
       showsCompass
-      zoomControlEnabled
+      zoomControlEnabled={false}
       onPress={handlePress}
     >
       {/* Saved zones */}
@@ -115,23 +115,48 @@ const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function 
         />
       )}
     </MapView>
-      <Pressable
-        style={styles.locateBtn}
-        onPress={async () => {
-          const pos = await getCurrentPosition();
-          if (pos && mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: pos.lat,
-              longitude: pos.lng,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
+      {/* Custom zoom + locate controls stacked vertically */}
+      <View style={styles.controlStack}>
+        <Pressable
+          style={styles.controlBtn}
+          onPress={() => {
+            mapRef.current?.getCamera().then((cam) => {
+              if (cam) mapRef.current?.animateCamera({ zoom: (cam.zoom ?? 14) + 1 });
             });
-            _onLocate?.(pos);
-          }
-        }}
-      >
-        <Text style={styles.locateBtnText}>⦿</Text>
-      </Pressable>
+          }}
+        >
+          <Text style={styles.controlBtnText}>+</Text>
+        </Pressable>
+        <View style={styles.controlDivider} />
+        <Pressable
+          style={styles.controlBtn}
+          onPress={() => {
+            mapRef.current?.getCamera().then((cam) => {
+              if (cam) mapRef.current?.animateCamera({ zoom: (cam.zoom ?? 14) - 1 });
+            });
+          }}
+        >
+          <Text style={styles.controlBtnText}>−</Text>
+        </Pressable>
+        <View style={{ height: 8 }} />
+        <Pressable
+          style={styles.locateBtn}
+          onPress={async () => {
+            const pos = await getCurrentPosition();
+            if (pos && mapRef.current) {
+              mapRef.current.animateToRegion({
+                latitude: pos.lat,
+                longitude: pos.lng,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              });
+              _onLocate?.(pos);
+            }
+          }}
+        >
+          <Text style={styles.locateBtnText}>⦿</Text>
+        </Pressable>
+      </View>
     </View>
   );
 });
@@ -141,10 +166,27 @@ export default PlatformMapNative;
 const styles = StyleSheet.create({
   wrapper: { flex: 1, position: 'relative' },
   map: { flex: 1 },
-  locateBtn: {
+  controlStack: {
     position: 'absolute',
     bottom: 24,
     right: 12,
+    alignItems: 'center',
+  },
+  controlBtn: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  controlBtnText: { fontSize: 22, fontWeight: '700', color: '#333' },
+  controlDivider: { height: 1, width: 44, backgroundColor: '#ddd' },
+  locateBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,

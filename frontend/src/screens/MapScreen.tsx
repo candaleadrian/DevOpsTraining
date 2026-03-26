@@ -78,6 +78,9 @@ export function MapScreen() {
   // Selected zone (highlighted on map)
   const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
 
+  // Zone list collapsed/expanded
+  const [zonesExpanded, setZonesExpanded] = useState(false);
+
   // Editing state
   const [editingZone, setEditingZone] = useState<AlarmZone | null>(null);
   const [editName, setEditName] = useState('');
@@ -343,8 +346,14 @@ export function MapScreen() {
 
         {zones.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Saved Zones ({zones.length})</Text>
-            <ScrollView style={{ maxHeight: 200 }}>
+            <Pressable
+              style={styles.cardHeader}
+              onPress={() => setZonesExpanded((v) => !v)}
+            >
+              <Text style={styles.cardTitle}>Saved Zones ({zones.length})</Text>
+              <Text style={styles.cardToggle}>{zonesExpanded ? '▲' : '▼'}</Text>
+            </Pressable>
+            {zonesExpanded && <ScrollView style={{ maxHeight: 200 }}>
               {zones.map((z, i) => {
                 const pr = proximityResults.find((r) => r.zone_id === z.id);
                 const isConfirming = confirmDeleteId === z.id;
@@ -404,6 +413,10 @@ export function MapScreen() {
                       if (!isSelected) {
                         mapRef.current?.animateTo(z.latitude, z.longitude);
                       }
+                      // Close any open edit form when selecting a different zone
+                      if (editingZone && editingZone.id !== z.id) {
+                        cancelEdit();
+                      }
                     }}
                   >
                     <View
@@ -438,7 +451,7 @@ export function MapScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </ScrollView>}
           </View>
         )}
 
@@ -471,7 +484,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e7d8c9',
   },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontWeight: '700', fontSize: 15, color: '#1f2a37' },
+  cardToggle: { fontSize: 14, color: '#7a8793', paddingHorizontal: 4 },
   input: {
     borderWidth: 1,
     borderColor: '#e7d8c9',
