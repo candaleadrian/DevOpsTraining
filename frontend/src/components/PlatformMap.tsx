@@ -17,7 +17,7 @@ function useLeafletCSS() {
 }
 
 const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function PlatformMap(
-  { zones, userPos, pendingPoint, pendingRadius, onMapPress },
+  { zones, userPos, pendingPoint, pendingRadius, onMapPress, onLocate },
   ref,
 ) {
   useLeafletCSS();
@@ -65,7 +65,10 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
             e.preventDefault();
             if ('geolocation' in navigator) {
               navigator.geolocation.getCurrentPosition(
-                (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 15, { animate: true }),
+                (pos) => {
+                  map.setView([pos.coords.latitude, pos.coords.longitude], 15, { animate: true });
+                  onLocate?.({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                },
                 () => {},
                 { enableHighAccuracy: true },
               );

@@ -1,4 +1,5 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -47,10 +48,10 @@ function MainTabs() {
       }}
       initialRouteName="Map"
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
-      <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'History' }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>🏠</Text> }} />
+      <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map', tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>🗺️</Text> }} />
+      <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'History', tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📋</Text> }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>⚙️</Text> }} />
     </Tab.Navigator>
   );
 }

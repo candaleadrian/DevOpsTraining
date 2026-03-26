@@ -15,6 +15,7 @@ export interface PlatformMapProps {
   pendingPoint: LatLng | null;
   pendingRadius: number;
   onMapPress: (point: LatLng) => void;
+  onLocate?: (pos: LatLng) => void;
 }
 
 // Colours for zone circles (shared between web and native)

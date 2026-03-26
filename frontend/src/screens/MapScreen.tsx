@@ -288,6 +288,7 @@ export function MapScreen() {
             : pendingPoint}
           pendingRadius={repositioning && editingZone ? editRadius : pendingRadius}
           onMapPress={handleMapPress}
+          onLocate={(pos) => setUserPos(pos)}
         />
         <LocationSearch onSelect={handleSearchSelect} />
       </View>

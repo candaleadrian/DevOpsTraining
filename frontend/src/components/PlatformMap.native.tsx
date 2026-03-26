@@ -14,7 +14,7 @@ const DEFAULT_REGION: Region = {
 };
 
 const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function PlatformMapNative(
-  { zones, userPos, pendingPoint, pendingRadius, onMapPress },
+  { zones, userPos, pendingPoint, pendingRadius, onMapPress, onLocate: _onLocate },
   ref,
 ) {
   const mapRef = useRef<MapView>(null);
@@ -58,6 +58,8 @@ const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function 
       initialRegion={DEFAULT_REGION}
       showsUserLocation
       showsMyLocationButton
+      showsCompass
+      zoomControlEnabled
       onPress={handlePress}
     >
       {/* Saved zones */}
