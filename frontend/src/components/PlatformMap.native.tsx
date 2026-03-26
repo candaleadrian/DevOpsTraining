@@ -1,7 +1,7 @@
 // PlatformMap — native implementation using react-native-maps
 
 import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View, Pressable, Text } from 'react-native';
 import MapView, { Marker, Circle, MapPressEvent, Region } from 'react-native-maps';
 import { getCurrentPosition } from '../services/locationTracker';
 import { PlatformMapProps, PlatformMapRef, ZONE_COLOURS } from './PlatformMap.types';
@@ -52,6 +52,7 @@ const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function 
   };
 
   return (
+    <View style={styles.wrapper}>
     <MapView
       ref={mapRef}
       style={styles.map}
@@ -114,11 +115,47 @@ const PlatformMapNative = forwardRef<PlatformMapRef, PlatformMapProps>(function 
         />
       )}
     </MapView>
+      <Pressable
+        style={styles.locateBtn}
+        onPress={async () => {
+          const pos = await getCurrentPosition();
+          if (pos && mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude: pos.lat,
+              longitude: pos.lng,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            });
+            _onLocate?.(pos);
+          }
+        }}
+      >
+        <Text style={styles.locateBtnText}>⦿</Text>
+      </Pressable>
+    </View>
   );
 });
 
 export default PlatformMapNative;
 
 const styles = StyleSheet.create({
+  wrapper: { flex: 1, position: 'relative' },
   map: { flex: 1 },
+  locateBtn: {
+    position: 'absolute',
+    bottom: 24,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  locateBtnText: { fontSize: 22, color: '#333' },
 });
