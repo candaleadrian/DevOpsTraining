@@ -75,6 +75,9 @@ export function MapScreen() {
   // Pending delete confirmation
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
+  // Selected zone (highlighted on map)
+  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+
   // Editing state
   const [editingZone, setEditingZone] = useState<AlarmZone | null>(null);
   const [editName, setEditName] = useState('');
@@ -391,16 +394,24 @@ export function MapScreen() {
                   );
                 }
 
+                const isSelected = selectedZoneId === z.id;
                 return (
-                  <View key={z.id} style={styles.zoneRow}>
+                  <Pressable
+                    key={z.id}
+                    style={[styles.zoneRow, isSelected && styles.zoneRowSelected]}
+                    onPress={() => {
+                      setSelectedZoneId(isSelected ? null : z.id);
+                      if (!isSelected) {
+                        mapRef.current?.animateTo(z.latitude, z.longitude);
+                      }
+                    }}
+                  >
                     <View
                       style={[styles.dot, { backgroundColor: ZONE_COLOURS[i % ZONE_COLOURS.length] }]}
                     />
-                    <Pressable style={{ flex: 1 }} onPress={() => startEditing(z)}>
-                      <Text style={styles.zoneName} numberOfLines={1}>
-                        {z.name}
-                      </Text>
-                    </Pressable>
+                    <Text style={styles.zoneName} numberOfLines={1}>
+                      {z.name}
+                    </Text>
                     <Text style={styles.zoneInfo}>
                       {z.radius_meters}m
                       {pr ? ` · ${Math.round(pr.distance)}m away` : ''}
@@ -415,11 +426,16 @@ export function MapScreen() {
                         </Pressable>
                       </View>
                     ) : (
-                      <Pressable onPress={() => setConfirmDeleteId(z.id)}>
-                        <Text style={styles.deleteBtn}>✕</Text>
-                      </Pressable>
+                      <View style={styles.confirmRow}>
+                        <Pressable onPress={() => startEditing(z)}>
+                          <Text style={styles.editBtn}>✏️</Text>
+                        </Pressable>
+                        <Pressable onPress={() => setConfirmDeleteId(z.id)}>
+                          <Text style={styles.deleteBtn}>✕</Text>
+                        </Pressable>
+                      </View>
                     )}
-                  </View>
+                  </Pressable>
                 );
               })}
             </ScrollView>
@@ -465,11 +481,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1f2a37',
   },
-  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, paddingHorizontal: 4, borderRadius: 6 },
+  zoneRowSelected: { backgroundColor: '#f0e6d9' },
   dot: { width: 10, height: 10, borderRadius: 5 },
   zoneName: { fontWeight: '600', fontSize: 13, color: '#1f2a37', flex: 1 },
   zoneInfo: { fontSize: 12, color: '#7a8793' },
-  deleteBtn: { fontSize: 16, color: '#dc2626', paddingHorizontal: 6 },
+  editBtn: { fontSize: 16, paddingHorizontal: 4 },
+  deleteBtn: { fontSize: 16, color: '#dc2626', paddingHorizontal: 4 },
   confirmRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
   confirmYes: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   confirmText: { color: '#fff', fontSize: 12, fontWeight: '700' },
