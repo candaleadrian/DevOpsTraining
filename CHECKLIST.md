@@ -92,9 +92,10 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 ### 2.2 Backend Testing
 - [x] Write unit tests for proximity calculation
 - [x] Write unit tests for API endpoints (17 tests)
+- [x] Write unit tests for auth (register, login, /me, data isolation — 12 tests)
 - [x] Write integration tests with test database (SQLite in-memory via conftest.py)
 - [ ] Achieve 80%+ code coverage (currently 60%+ enforced in CI)
-- [x] Run: `pytest tests/ -v --tb=short`
+- [x] Run: `pytest tests/ -v --tb=short` — **29 tests passing**
 - **Status**: 🟡 Mostly Complete
 
 ### 2.3 Frontend Features
@@ -139,12 +140,21 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [x] Locate-me button on web (Leaflet custom control) and Android (custom floating Pressable)
 - [x] Custom zoom controls (web: bottom-right, Android: custom +/− buttons above locate)
 - [x] Tab bar emoji icons (🏠🗺️📋⚙️) for Android compatibility
+- [x] User authentication (JWT login/register with per-user data isolation)
+  - [x] User model + Alembic migration (users table, user_id FK on zones/events)
+  - [x] Auth utilities (password hashing, JWT token creation/validation)
+  - [x] Auth endpoints (POST /auth/register, POST /auth/login, GET /auth/me)
+  - [x] All zone/event endpoints user-scoped (optional JWT, filter by user_id)
+- [x] Guest mode (local-only zones, max 3, stored in localStorage/AsyncStorage)
+- [x] Auth screen (login/register UI + "Continue as Guest" button)
+- [x] Auth context (React Context with token persistence, shared Axios JWT interceptor)
+- [x] Account section in Settings (email display, sign out, sign in)
 - **Status**: ✅ Complete
 
 ### 2.4 Frontend Testing
 - [x] Write unit tests for services (zonesApi, historyApi, alarmPreferences, LocationSearch — 26 tests)
 - [ ] Write unit tests for components
-- [x] Run: `npm test`
+- [x] Run: `npm test` — **26 tests passing**
 - **Status**: 🟡 Mostly Complete (component tests deferred)
 
 ### 2.5 API Integration
@@ -276,11 +286,11 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 
 ```
 Phase 1: Setup & Hello World          [██████████] 100%
-Phase 2: Development & Testing        [█████████░]  95%
+Phase 2: Development & Testing        [█████████░]  98%
 Phase 3: CI/CD & DevOps               [█████████░]  90%
 Phase 4: Production Ready             [░░░░░░░░░░]   0%
 ─────────────────────────────────────────────────
-Total Progress:                        [████████░░]  72%
+Total Progress:                        [████████░░]  74%
 ```
 
 ---

@@ -17,7 +17,7 @@ A **cross-platform proximity alarm app** (web + Android) that:
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | React Native / Expo (Web + Android), Leaflet (web), react-native-maps (Android), TypeScript |
-| **Backend** | FastAPI (Python 3.11) |
+| **Backend** | FastAPI (Python 3.11), JWT auth (python-jose, passlib) |
 | **Database** | PostgreSQL 15 |
 | **Containers** | Docker & Docker Compose |
 | **CI/CD** | GitHub Actions (backend CI, frontend CI, infra Terraform, Android APK build) |
@@ -63,6 +63,13 @@ make up
 - Toast notifications for action feedback
 - Alarm history logging to backend
 
+### User Authentication
+- Login / Register with email + password (JWT tokens)
+- Per-user data isolation — each user's zones are private and synced across devices
+- Guest mode — use the app without an account (up to 3 zones, stored locally on device)
+- Auth screen as entry point with "Continue as Guest" option
+- Account section in Settings (email display, sign out, sign in)
+
 ### Settings Screen
 - **Alarm mode**: Notification only, Sound only, or Both
 - **Sound**: Beep, Siren, or Chime (Web Audio API on web, vibration patterns on Android)
@@ -73,8 +80,12 @@ make up
 ### Backend API
 - `GET /` — Hello World
 - `GET /health` — Health check
+- `POST /auth/register` — Create account
+- `POST /auth/login` — Sign in (returns JWT)
+- `GET /auth/me` — Current user info (requires auth)
 - `POST /set-location` — Set alarm point + radius
 - `POST /check-location` — Check proximity (Haversine formula)
+- All zone & event endpoints support optional JWT for per-user data isolation
 - `GET /docs` — Swagger UI
 
 ## 📖 Documentation
@@ -93,15 +104,21 @@ proximity-alarm-app/
 ├── backend/                # Python FastAPI server
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   └── src/main.py         # API endpoints + Haversine logic
+│   └── src/
+│       ├── main.py         # API endpoints + Haversine logic
+│       ├── auth.py          # JWT utilities + FastAPI auth dependencies
+│       ├── database.py      # SQLAlchemy engine + session
+│       └── models/          # User, AlarmZone, AlarmEvent
 ├── frontend/               # Expo React Native app (Web + Android)
 │   ├── Dockerfile
 │   ├── eas.json            # EAS Build config (Android APK/AAB)
 │   ├── src/
 │   │   ├── components/     # PlatformMap (Leaflet on web, react-native-maps on Android)
 │   │   │                   # LocationSearch (geocoding search bar)
-│   │   ├── screens/        # MapScreen, HomeScreen, HistoryScreen, SettingsScreen
-│   │   ├── services/       # Platform-specific: alarmTrigger, alarmPreferences, locationTracker
+│   │   ├── screens/        # MapScreen, HomeScreen, HistoryScreen, SettingsScreen, AuthScreen
+│   │   ├── context/        # AuthContext (login state, guest mode)
+│   │   ├── services/       # zonesApi, historyApi, authApi, guestZonesApi, alarmTrigger, etc.
+│   │   ├── config/         # apiClient (shared Axios with JWT interceptor), theme
 │   │   ├── navigation/     # Tab + stack navigation (emoji icons)
 │   │   └── ui/             # Shared layout components
 │   └── app.json            # Expo config (incl. background location permissions)
@@ -138,19 +155,20 @@ proximity-alarm-app/
 - [x] Collapsible zone list panel
 - [x] GitHub Actions Android APK build pipeline (workflow_dispatch, master only)
 - [x] ACR image purge automation
+- [x] User authentication — JWT login/register with per-user data isolation
+- [x] Guest mode — local-only zones (max 3) without account
 
 ### 🔜 Next Steps
 1. **Monitoring** — Application Insights integration + Azure dashboards
 2. **Security scanning** — Trivy container scanning, npm/pip audit
 3. **Staging environment** — deploy on push to main with manual prod approval
-4. **User authentication** — login/register with JWT
 
 ## 🎓 Learning Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1. Setup & Hello World | Docker, Git, project scaffolding | ✅ Complete |
-| 2. Development & Testing | Features, tests, DB integration | ✅ ~95% |
+| 2. Development & Testing | Features, tests, DB integration, auth | ✅ ~98% |
 | 3. CI/CD & DevOps | GitHub Actions, IaC, deployment, CORS | ✅ ~85% |
 | 4. Production Ready | Security, monitoring, go-live | ⏳ Not started |
 - Go live! 🚀

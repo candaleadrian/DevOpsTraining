@@ -97,12 +97,15 @@ Key points:
 frontend/src/
 ├── components/     # PlatformMap (.tsx for web/Leaflet, .native.tsx for Android/Google Maps)
 │                   # LocationSearch (geocoding search bar)
-├── navigation/     # AppNavigator (bottom tabs + stack, emoji icons)
-├── screens/        # MapScreen, SettingsScreen, HomeScreen, HistoryScreen, AlarmDetailScreen
+├── context/        # AuthContext (login state, guest mode, token persistence)
+├── navigation/     # AppNavigator (Auth screen → bottom tabs + stack, emoji icons)
+├── screens/        # MapScreen, SettingsScreen, HomeScreen, HistoryScreen, AlarmDetailScreen, AuthScreen
 ├── services/       # Platform-specific: alarmPreferences, alarmTrigger, locationTracker
 │                   # (.ts = web default, .native.ts = Android/iOS override)
+│                   # authApi (register/login/token persistence)
+│                   # guestZonesApi (local-only zone storage, max 3)
 ├── ui/             # Reusable layout primitives
-├── config/         # Theme, constants
+├── config/         # apiClient (shared Axios + JWT interceptor), theme, constants
 └── hooks/          # Custom hooks
 ```
 
@@ -114,6 +117,9 @@ The backend provides:
 |--------|------|-------------|
 | `GET` | `/` | Root message |
 | `GET` | `/health` | Health check |
+| `POST` | `/auth/register` | Create account (email + password) |
+| `POST` | `/auth/login` | Sign in (returns JWT token) |
+| `GET` | `/auth/me` | Current user info (requires auth) |
 | `POST` | `/set-location` | Set alarm point (lat, lng, radius) — legacy, in-memory |
 | `POST` | `/check-location` | Check proximity (returns alarm + distance) — legacy |
 | `POST` | `/api/zones` | Create alarm zone (DB-backed) |
@@ -138,7 +144,7 @@ curl -X POST http://localhost:8000/check-location \
   -d '{"latitude": 44.4270, "longitude": 26.1030}'
 ```
 
-> **Note**: The backend stores the alarm point in memory for the legacy `/set-location` endpoint. For full persistence, use the `/api/zones` CRUD endpoints which store data in PostgreSQL.
+> **Note**: The backend stores the alarm point in memory for the legacy `/set-location` endpoint. For full persistence, use the `/api/zones` CRUD endpoints which store data in PostgreSQL. All zone and event endpoints support optional JWT authentication for per-user data isolation.
 
 ## Testing
 
@@ -146,7 +152,7 @@ All tests pass locally and in CI.
 
 ```bash
 make test           # Run all tests
-make test-backend   # Backend tests (pytest, 17 tests)
+make test-backend   # Backend tests (pytest, 29 tests)
 make test-frontend  # Frontend tests (Jest, 26 tests)
 ```
 

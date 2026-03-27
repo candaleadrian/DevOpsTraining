@@ -73,16 +73,20 @@ proximity-alarm-app/
 │   │   ├── env.py
 │   │   └── versions/
 │   │       ├── 0001_create_alarm_zones.py
-│   │       └── 0002_create_alarm_events.py
+│   │       ├── 0002_create_alarm_events.py
+│   │       └── 0003_create_users_add_user_id.py
 │   ├── tests/
 │   │   ├── conftest.py             # SQLite in-memory DB override for tests
-│   │   └── test_api.py             # 17 API tests (CRUD, proximity, events)
+│   │   ├── test_api.py             # 17 API tests (CRUD, proximity, events)
+│   │   └── test_auth.py            # 12 auth tests (register, login, data isolation)
 │   └── src/
 │       ├── main.py                 # FastAPI app (all endpoints)
+│       ├── auth.py                 # JWT utilities + auth dependencies
 │       ├── database.py             # SQLAlchemy engine + session
 │       └── models/
-│           ├── alarm_zone.py       # AlarmZone model
-│           └── alarm_event.py      # AlarmEvent model
+│           ├── user.py             # User model (email, hashed_password)
+│           ├── alarm_zone.py       # AlarmZone model (+ user_id FK)
+│           └── alarm_event.py      # AlarmEvent model (+ user_id FK)
 ├── frontend/
 │   ├── Dockerfile
 │   ├── package.json
@@ -96,16 +100,22 @@ proximity-alarm-app/
 │       │   ├── PlatformMap.types.ts   # Shared map types and zone colours
 │       │   └── LocationSearch.tsx      # Geocoding search bar
 │       ├── navigation/
-│       │   └── AppNavigator.tsx        # Bottom tabs + stack (emoji icons)
+│       │   ├── AppNavigator.tsx        # Auth screen → bottom tabs + stack (emoji icons)
+│       │   └── types.ts               # Navigation type definitions
 │       ├── screens/
 │       │   ├── HomeScreen.tsx
 │       │   ├── MapScreen.tsx           # Map + zone CRUD + monitoring + editing
 │       │   ├── HistoryScreen.tsx       # Alarm history log
-│       │   ├── SettingsScreen.tsx      # Alarm prefs + radius step config
+│       │   ├── SettingsScreen.tsx      # Alarm prefs + radius step + account section
+│       │   ├── AuthScreen.tsx          # Login / Register / Guest mode entry
 │       │   └── AlarmDetailScreen.tsx
+│       ├── context/
+│       │   └── AuthContext.tsx          # Auth state provider (token, user, guest mode)
 │       ├── services/
-│       │   ├── zonesApi.ts             # Zone CRUD API client
-│       │   ├── historyApi.ts           # Alarm events API client
+│       │   ├── zonesApi.ts             # Zone CRUD API client (uses shared apiClient)
+│       │   ├── historyApi.ts           # Alarm events API client (uses shared apiClient)
+│       │   ├── authApi.ts              # Auth API (register, login, logout, token persistence)
+│       │   ├── guestZonesApi.ts        # Local-only zone storage (max 3, Haversine proximity)
 │       │   ├── alarmPreferences.ts     # localStorage preference store (web)
 │       │   ├── alarmPreferences.native.ts # AsyncStorage (Android)
 │       │   ├── alarmTrigger.ts         # Web Audio + Notification API
@@ -120,7 +130,7 @@ proximity-alarm-app/
 │       │       ├── alarmPreferences.test.ts # 5 tests
 │       │       └── LocationSearch.test.ts  # 9 tests
 │       ├── ui/                     # Reusable layout primitives
-│       ├── config/                 # Theme, constants
+│       ├── config/                 # apiClient (shared Axios + JWT interceptor), theme, constants
 │       └── hooks/                  # Custom hooks
 ├── infra/
 │   └── terraform/              # Azure IaC (modules: network, database, container_apps, etc.)
@@ -402,15 +412,18 @@ Goal: Build proximity alarm feature with comprehensive testing.
 - [x] `POST /check-location` — check proximity, returns `{alarm: bool, distance: float}`
 - [x] `GET /health` — health check
 - [x] Pydantic models for request validation (`LocationData`, `UserLocation`)
+- [x] Database models for alarm zones (AlarmZone + AlarmEvent with SQLAlchemy)
+- [x] Database connection layer (get_db session dependency)
+- [x] CRUD API endpoints for zones and alarm events
+- [x] Alembic migrations (0001 zones, 0002 events, 0003 users)
+- [x] User authentication (JWT via python-jose, password hashing via passlib)
+  - [x] User model (email, hashed_password, created_at)
+  - [x] Auth endpoints: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+  - [x] All zone/event endpoints user-scoped (optional JWT, per-user data isolation)
+- [x] Unit + integration tests with pytest (29 tests: 17 API + 12 auth)
 
 **TODO:**
-- [ ] Database models for alarm zones (AlarmPoint table with SQLAlchemy)
-- [ ] Database connection layer (get_db session dependency)
-- [ ] CRUD API endpoints: `POST /api/alarms`, `GET /api/alarms`, `DELETE /api/alarms/{id}`
-- [ ] Replace in-memory `selected_location` global with database persistence
-- [ ] Alembic migrations
-- [ ] Unit tests with pytest
-- [ ] Integration tests with TestClient
+- [ ] Replace in-memory `selected_location` global with database persistence (legacy endpoint)
 
 #### Backend Tests (Planned)
 
@@ -441,16 +454,20 @@ pytest backend/tests/integration/ -v
 **TODO:**
 - [x] Display saved alarm zones from DB (backend CRUD + frontend zonesApi)
 - [x] Multiple simultaneous alarm zones (multi-zone CRUD + proximity check)
+- [x] User authentication UI (AuthScreen with login/register + guest mode)
+  - [x] AuthContext (React Context with token persistence, shared Axios JWT interceptor)
+  - [x] Guest mode (local-only zones via guestZonesApi, max 3)
+  - [x] Account section in Settings (email display, sign out, sign in)
 - [ ] Simulation mode for testing without real GPS
-- [x] Unit tests with Jest (17 tests — zonesApi, historyApi, alarmPreferences)
+- [x] Unit tests with Jest (26 tests — zonesApi, historyApi, alarmPreferences, LocationSearch)
 
 ### 2.3 Testing Summary
 
 | Test Type | Framework | Status | Command |
 |-----------|-----------|--------|---------|
-| Backend Unit | pytest | ✅ Done (17 tests) | `pytest tests/ -v --tb=short` |
+| Backend Unit | pytest | ✅ Done (29 tests) | `pytest tests/ -v --tb=short` |
 | Backend Integration | TestClient + SQLite | ✅ Done | `pytest tests/ -v` |
-| Frontend Unit | Jest + ts-jest | ✅ Done (17 tests) | `npm test` |
+| Frontend Unit | Jest + ts-jest | ✅ Done (26 tests) | `npm test` |
 | Frontend E2E | Playwright/Cypress | Planned | TBD |
 | Load Testing | Locust | Planned | TBD |
 
