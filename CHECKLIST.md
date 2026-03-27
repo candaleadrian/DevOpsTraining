@@ -129,10 +129,20 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
   - [x] Platform-specific storage (alarmPreferences.ts / alarmPreferences.native.ts)
   - [x] EAS Build config for Android APK
   - [x] API URL auto-configuration per platform
+- [x] Location search with geocoding (LocationSearch component)
+- [x] Inline zone editing (rename, resize radius, reposition on map)
+- [x] Zone selection with map pan and highlight
+- [x] Edit (✏️) and Delete (✕) buttons per zone row
+- [x] Collapsible zone list panel (▼/▲ toggle)
+- [x] Configurable radius step in Settings (preset chips + custom TextInput)
+- [x] Background location tracking on Android (expo-task-manager + foreground service)
+- [x] Locate-me button on web (Leaflet custom control) and Android (custom floating Pressable)
+- [x] Custom zoom controls (web: bottom-right, Android: custom +/− buttons above locate)
+- [x] Tab bar emoji icons (🏠🗺️📋⚙️) for Android compatibility
 - **Status**: ✅ Complete
 
 ### 2.4 Frontend Testing
-- [x] Write unit tests for services (zonesApi, historyApi, alarmPreferences — 17 tests)
+- [x] Write unit tests for services (zonesApi, historyApi, alarmPreferences, LocationSearch — 26 tests)
 - [ ] Write unit tests for components
 - [x] Run: `npm test`
 - **Status**: 🟡 Mostly Complete (component tests deferred)
@@ -161,9 +171,13 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
   - [x] TypeScript type check (`tsc --noEmit`)
   - [x] Expo web build (`expo export --platform web`)
   - [x] Dependency audit
-  - [x] Jest test suite (17 tests — zonesApi, historyApi, alarmPreferences)
+  - [x] Jest test suite (26 tests — zonesApi, historyApi, alarmPreferences, LocationSearch)
   - [x] Pipeline order: TypeCheck + Lint → Build → Tests
   - [x] Push Docker image to ACR on master merge
+- [x] Create `.github/workflows/build-android.yml`
+  - [x] Manual trigger (workflow_dispatch) on master branch only
+  - [x] Expo prebuild + Gradle assembleRelease
+  - [x] Upload APK as GitHub Actions artifact (30 day retention)
 - [x] Workflows trigger on push to master and PRs
 - [x] Path filters so backend changes only trigger backend CI
 - [x] Linting passes locally (ruff + tsc)
@@ -230,7 +244,7 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 - [ ] `npm audit` and `pip audit`
 - **Status**: ⏳ Not Started
 
-**Phase 3 Complete?** 🟡 ~85% (CI + IaC + deployment + CORS + provider upgrade done, monitoring/security next)
+**Phase 3 Complete?** 🟡 ~90% (CI + IaC + deployment + CORS + provider upgrade + Android APK done, monitoring/security next)
 
 ---
 
@@ -263,10 +277,10 @@ Build and deploy a complete mobile app with enterprise DevOps practices, from He
 ```
 Phase 1: Setup & Hello World          [██████████] 100%
 Phase 2: Development & Testing        [█████████░]  95%
-Phase 3: CI/CD & DevOps               [████████░░]  85%
+Phase 3: CI/CD & DevOps               [█████████░]  90%
 Phase 4: Production Ready             [░░░░░░░░░░]   0%
 ─────────────────────────────────────────────────
-Total Progress:                        [████████░░]  69%
+Total Progress:                        [████████░░]  72%
 ```
 
 ---

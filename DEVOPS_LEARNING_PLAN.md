@@ -62,7 +62,9 @@ proximity-alarm-app/
 ├── .github/
 │   └── workflows/
 │       ├── ci-backend.yml          # Backend CI: lint (ruff) + test (pytest + PostgreSQL)
-│       └── ci-frontend.yml         # Frontend CI: typecheck + lint → build → test
+│       ├── ci-frontend.yml         # Frontend CI: typecheck + lint → build → test
+│       ├── build-android.yml       # Android APK build (workflow_dispatch, master only)
+│       └── infra-terraform.yml     # Terraform plan/apply pipeline
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -84,31 +86,44 @@ proximity-alarm-app/
 ├── frontend/
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── app.json
+│   ├── app.json                    # Expo config (incl. background location permissions)
+│   ├── eas.json                    # EAS Build config (Android APK/AAB)
 │   ├── jest.config.js              # Jest configuration (ts-jest)
 │   └── src/
+│       ├── components/
+│       │   ├── PlatformMap.tsx         # Web map (Leaflet + custom zoom/locate controls)
+│       │   ├── PlatformMap.native.tsx  # Android map (react-native-maps + custom controls)
+│       │   ├── PlatformMap.types.ts   # Shared map types and zone colours
+│       │   └── LocationSearch.tsx      # Geocoding search bar
 │       ├── navigation/
-│       │   └── AppNavigator.tsx    # Bottom tabs + stack navigator
+│       │   └── AppNavigator.tsx        # Bottom tabs + stack (emoji icons)
 │       ├── screens/
 │       │   ├── HomeScreen.tsx
-│       │   ├── MapScreen.tsx       # Cross-platform map (uses PlatformMap component)
-│       │   ├── HistoryScreen.tsx   # Alarm history log
-│       │   ├── SettingsScreen.tsx  # Alarm preferences
+│       │   ├── MapScreen.tsx           # Map + zone CRUD + monitoring + editing
+│       │   ├── HistoryScreen.tsx       # Alarm history log
+│       │   ├── SettingsScreen.tsx      # Alarm prefs + radius step config
 │       │   └── AlarmDetailScreen.tsx
 │       ├── services/
-│       │   ├── zonesApi.ts         # Zone CRUD API client
-│       │   ├── historyApi.ts       # Alarm events API client
-│       │   ├── alarmPreferences.ts # localStorage preference store
-│       │   ├── alarmTrigger.ts     # Web Audio + Notification API
-│       │   ├── locationService.js  # Legacy API calls
-│       │   ├── health.ts           # Health check service
+│       │   ├── zonesApi.ts             # Zone CRUD API client
+│       │   ├── historyApi.ts           # Alarm events API client
+│       │   ├── alarmPreferences.ts     # localStorage preference store (web)
+│       │   ├── alarmPreferences.native.ts # AsyncStorage (Android)
+│       │   ├── alarmTrigger.ts         # Web Audio + Notification API
+│       │   ├── alarmTrigger.native.ts  # Vibration + expo-notifications (Android)
+│       │   ├── locationTracker.ts      # Browser geolocation (web)
+│       │   ├── locationTracker.native.ts # expo-location + background task (Android)
+│       │   ├── locationService.js      # Legacy API calls
+│       │   ├── health.ts               # Health check service
 │       │   └── __tests__/
 │       │       ├── zonesApi.test.ts        # 7 tests
 │       │       ├── historyApi.test.ts      # 5 tests
-│       │       └── alarmPreferences.test.ts # 5 tests
+│       │       ├── alarmPreferences.test.ts # 5 tests
+│       │       └── LocationSearch.test.ts  # 9 tests
 │       ├── ui/                     # Reusable layout primitives
 │       ├── config/                 # Theme, constants
 │       └── hooks/                  # Custom hooks
+├── infra/
+│   └── terraform/              # Azure IaC (modules: network, database, container_apps, etc.)
 ├── docker-compose.yml              # 3 services: postgres, backend, frontend
 ├── Makefile                        # Common commands
 ├── DEVOPS_LEARNING_PLAN.md         # This file

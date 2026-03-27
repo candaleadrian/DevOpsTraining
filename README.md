@@ -20,7 +20,7 @@ A **cross-platform proximity alarm app** (web + Android) that:
 | **Backend** | FastAPI (Python 3.11) |
 | **Database** | PostgreSQL 15 |
 | **Containers** | Docker & Docker Compose |
-| **CI/CD** | GitHub Actions |
+| **CI/CD** | GitHub Actions (backend CI, frontend CI, infra Terraform, Android APK build) |
 | **Cloud** | Microsoft Azure (Container Apps, ACR, PostgreSQL, App Insights) |
 | **IaC** | Terraform (azurerm v4.65.0) |
 
@@ -47,14 +47,27 @@ make up
 ### Map Screen
 - Interactive map (Leaflet/OpenStreetMap on web, Google Maps on Android)
 - Tap to set an alarm point (marker + radius circle)
-- Adjust radius with ± 100m buttons
+- Adjust radius with configurable ± step buttons
 - Start/Stop location monitoring (browser GPS on web, expo-location on Android)
+- Background location tracking on Android (expo-task-manager foreground service)
 - Visual proximity status ("X m away" or "🔔 ALARM")
+- Location search bar with geocoding (search by address/place name)
+- Locate-me button (⦿) to center map on current GPS position
+- Custom zoom controls (web: bottom-right Leaflet controls, Android: custom +/− buttons)
+- Save multiple named alarm zones with CRUD operations
+- Inline zone editing (rename, resize radius, reposition on map)
+- Zone selection: tap a zone to highlight and pan to it on the map
+- Edit (✏️) and Delete (✕) buttons per zone row
+- Collapsible zone list panel (▼/▲ toggle)
+- Delete confirmation flow
+- Toast notifications for action feedback
+- Alarm history logging to backend
 
 ### Settings Screen
 - **Alarm mode**: Notification only, Sound only, or Both
 - **Sound**: Beep, Siren, or Chime (Web Audio API on web, vibration patterns on Android)
 - **Volume**: 20% – 100%
+- **Radius step**: Preset chips (10/25/50/100/250/500m) or custom value
 - Test Alarm button to preview your selection
 
 ### Backend API
@@ -86,11 +99,14 @@ proximity-alarm-app/
 │   ├── eas.json            # EAS Build config (Android APK/AAB)
 │   ├── src/
 │   │   ├── components/     # PlatformMap (Leaflet on web, react-native-maps on Android)
-│   │   ├── screens/        # MapScreen, HomeScreen, SettingsScreen
+│   │   │                   # LocationSearch (geocoding search bar)
+│   │   ├── screens/        # MapScreen, HomeScreen, HistoryScreen, SettingsScreen
 │   │   ├── services/       # Platform-specific: alarmTrigger, alarmPreferences, locationTracker
-│   │   ├── navigation/     # Tab + stack navigation
+│   │   ├── navigation/     # Tab + stack navigation (emoji icons)
 │   │   └── ui/             # Shared layout components
-│   └── app.json
+│   └── app.json            # Expo config (incl. background location permissions)
+├── infra/terraform/        # Azure IaC (Terraform modules)
+├── .github/workflows/      # CI/CD: backend, frontend, infra, Android APK
 ├── docker-compose.yml      # PostgreSQL + backend + frontend
 ├── Makefile                # Dev commands
 └── *.md                    # Documentation
@@ -112,20 +128,29 @@ proximity-alarm-app/
 - [x] Cross-platform architecture (web + Android) from single codebase
 - [x] Platform-specific map (Leaflet / react-native-maps), location, alarm, and storage services
 - [x] EAS Build configuration for Android APK generation
+- [x] Location search with geocoding
+- [x] Zone CRUD (create, edit, reposition, delete with confirmation)
+- [x] Configurable radius step (presets + custom value)
+- [x] Background location tracking on Android (expo-task-manager)
+- [x] Locate-me button on web and Android
+- [x] Custom zoom controls on both platforms
+- [x] Zone selection with map panning and highlight
+- [x] Collapsible zone list panel
+- [x] GitHub Actions Android APK build pipeline (workflow_dispatch, master only)
+- [x] ACR image purge automation
 
 ### 🔜 Next Steps
-1. **Android APK build** — Run `cd frontend && npm run build:android` via EAS Build
-2. **Monitoring** — Application Insights integration + Azure dashboards
-3. **Security scanning** — Trivy container scanning, npm/pip audit
-4. **Staging environment** — deploy on push to main with manual prod approval
-5. **User authentication** — login/register with JWT
+1. **Monitoring** — Application Insights integration + Azure dashboards
+2. **Security scanning** — Trivy container scanning, npm/pip audit
+3. **Staging environment** — deploy on push to main with manual prod approval
+4. **User authentication** — login/register with JWT
 
 ## 🎓 Learning Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1. Setup & Hello World | Docker, Git, project scaffolding | ✅ Complete |
-| 2. Development & Testing | Features, tests, DB integration | ✅ ~90% |
+| 2. Development & Testing | Features, tests, DB integration | ✅ ~95% |
 | 3. CI/CD & DevOps | GitHub Actions, IaC, deployment, CORS | ✅ ~85% |
 | 4. Production Ready | Security, monitoring, go-live | ⏳ Not started |
 - Go live! 🚀

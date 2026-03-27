@@ -96,8 +96,9 @@ Key points:
 ```
 frontend/src/
 ├── components/     # PlatformMap (.tsx for web/Leaflet, .native.tsx for Android/Google Maps)
-├── navigation/     # AppNavigator (bottom tabs + stack)
-├── screens/        # MapScreen, SettingsScreen, HomeScreen, AlarmDetailScreen
+│                   # LocationSearch (geocoding search bar)
+├── navigation/     # AppNavigator (bottom tabs + stack, emoji icons)
+├── screens/        # MapScreen, SettingsScreen, HomeScreen, HistoryScreen, AlarmDetailScreen
 ├── services/       # Platform-specific: alarmPreferences, alarmTrigger, locationTracker
 │                   # (.ts = web default, .native.ts = Android/iOS override)
 ├── ui/             # Reusable layout primitives
@@ -146,7 +147,7 @@ All tests pass locally and in CI.
 ```bash
 make test           # Run all tests
 make test-backend   # Backend tests (pytest, 17 tests)
-make test-frontend  # Frontend tests (Jest, 17 tests)
+make test-frontend  # Frontend tests (Jest, 26 tests)
 ```
 
 ## Code Quality
