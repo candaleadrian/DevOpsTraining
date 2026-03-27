@@ -10,6 +10,10 @@ jest.mock('axios', () => {
     get: jest.fn(),
     post: jest.fn(),
     delete: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() },
+    },
   };
   return {
     create: jest.fn(() => mockInstance),

@@ -1,5 +1,5 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { Text } from 'react-native';
+import { Text, ActivityIndicator, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -8,6 +8,8 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { MapScreen } from '../screens/MapScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { AuthScreen } from '../screens/AuthScreen';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 import { MainTabParamList, RootStackParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -58,8 +60,31 @@ function MainTabs() {
 
 export function AppNavigator() {
   return (
+    <AuthProvider>
+      <AppNavigatorInner />
+    </AuthProvider>
+  );
+}
+
+function AppNavigatorInner() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f7f4ee' }}>
+        <ActivityIndicator size="large" color="#8a5a44" />
+      </View>
+    );
+  }
+
+  return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator>
+        <Stack.Screen
+          name="Auth"
+          component={AuthScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}

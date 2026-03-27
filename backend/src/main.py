@@ -14,6 +14,14 @@ from datetime import datetime, timezone
 from src.db.database import get_db
 from src.models.alarm_zone import AlarmZone
 from src.models.alarm_event import AlarmEvent
+from src.models.user import User
+from src.auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user,
+    require_user,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +132,77 @@ class UserLocation(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Auth schemas
+# ---------------------------------------------------------------------------
+
+
+class AuthRegister(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=6, max_length=128)
+
+
+class AuthLogin(BaseModel):
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: dict
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.post("/auth/register", response_model=AuthResponse, status_code=201)
+def register(body: AuthRegister, db: Session = Depends(get_db)):
+    email = body.email.strip().lower()
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status_code=409, detail="Email already registered")
+    user = User(email=email, hashed_password=hash_password(body.password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    token = create_access_token(user.id, user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": user.id, "email": user.email},
+    }
+
+
+@app.post("/auth/login", response_model=AuthResponse)
+def login(body: AuthLogin, db: Session = Depends(get_db)):
+    email = body.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not verify_password(body.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_access_token(user.id, user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": user.id, "email": user.email},
+    }
+
+
+@app.get("/auth/me", response_model=UserOut)
+def get_me(user: User = Depends(require_user)):
+    return user
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -146,12 +225,17 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 @app.post("/api/zones", response_model=AlarmZoneOut, status_code=201)
-def create_zone(zone: AlarmZoneCreate, db: Session = Depends(get_db)):
+def create_zone(
+    zone: AlarmZoneCreate,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
     db_zone = AlarmZone(
         name=zone.name,
         latitude=zone.latitude,
         longitude=zone.longitude,
         radius_meters=zone.radius_meters,
+        user_id=user.id if user else None,
     )
     db.add(db_zone)
     db.commit()
@@ -160,21 +244,48 @@ def create_zone(zone: AlarmZoneCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/api/zones", response_model=List[AlarmZoneOut])
-def list_zones(db: Session = Depends(get_db)):
-    return db.query(AlarmZone).order_by(AlarmZone.created_at.desc()).all()
+def list_zones(
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    q = db.query(AlarmZone)
+    if user:
+        q = q.filter(AlarmZone.user_id == user.id)
+    else:
+        q = q.filter(AlarmZone.user_id.is_(None))
+    return q.order_by(AlarmZone.created_at.desc()).all()
 
 
 @app.get("/api/zones/{zone_id}", response_model=AlarmZoneOut)
-def get_zone(zone_id: int, db: Session = Depends(get_db)):
-    zone = db.query(AlarmZone).filter(AlarmZone.id == zone_id).first()
+def get_zone(
+    zone_id: int,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    q = db.query(AlarmZone).filter(AlarmZone.id == zone_id)
+    if user:
+        q = q.filter(AlarmZone.user_id == user.id)
+    else:
+        q = q.filter(AlarmZone.user_id.is_(None))
+    zone = q.first()
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     return zone
 
 
 @app.patch("/api/zones/{zone_id}", response_model=AlarmZoneOut)
-def update_zone(zone_id: int, updates: AlarmZoneUpdate, db: Session = Depends(get_db)):
-    zone = db.query(AlarmZone).filter(AlarmZone.id == zone_id).first()
+def update_zone(
+    zone_id: int,
+    updates: AlarmZoneUpdate,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    q = db.query(AlarmZone).filter(AlarmZone.id == zone_id)
+    if user:
+        q = q.filter(AlarmZone.user_id == user.id)
+    else:
+        q = q.filter(AlarmZone.user_id.is_(None))
+    zone = q.first()
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     for field, value in updates.model_dump(exclude_unset=True).items():
@@ -186,8 +297,17 @@ def update_zone(zone_id: int, updates: AlarmZoneUpdate, db: Session = Depends(ge
 
 
 @app.delete("/api/zones/{zone_id}", status_code=204)
-def delete_zone(zone_id: int, db: Session = Depends(get_db)):
-    zone = db.query(AlarmZone).filter(AlarmZone.id == zone_id).first()
+def delete_zone(
+    zone_id: int,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    q = db.query(AlarmZone).filter(AlarmZone.id == zone_id)
+    if user:
+        q = q.filter(AlarmZone.user_id == user.id)
+    else:
+        q = q.filter(AlarmZone.user_id.is_(None))
+    zone = q.first()
     if not zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     db.delete(zone)
@@ -200,8 +320,17 @@ def delete_zone(zone_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/api/zones/check")
-def check_zones(user_location: UserLocation, db: Session = Depends(get_db)):
-    zones = db.query(AlarmZone).filter(AlarmZone.is_active).all()
+def check_zones(
+    user_location: UserLocation,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    q = db.query(AlarmZone).filter(AlarmZone.is_active)
+    if user:
+        q = q.filter(AlarmZone.user_id == user.id)
+    else:
+        q = q.filter(AlarmZone.user_id.is_(None))
+    zones = q.all()
     results = []
     for z in zones:
         d = calculate_distance(
@@ -224,7 +353,11 @@ def check_zones(user_location: UserLocation, db: Session = Depends(get_db)):
 
 
 @app.post("/api/alarm-events", response_model=AlarmEventOut, status_code=201)
-def create_alarm_event(event: AlarmEventCreate, db: Session = Depends(get_db)):
+def create_alarm_event(
+    event: AlarmEventCreate,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
     db_event = AlarmEvent(
         zone_id=event.zone_id,
         zone_name=event.zone_name,
@@ -232,6 +365,7 @@ def create_alarm_event(event: AlarmEventCreate, db: Session = Depends(get_db)):
         distance_meters=event.distance_meters,
         latitude=event.latitude,
         longitude=event.longitude,
+        user_id=user.id if user else None,
     )
     db.add(db_event)
     db.commit()
@@ -244,16 +378,29 @@ def list_alarm_events(
     zone_id: Optional[int] = None,
     limit: int = 50,
     db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ):
     q = db.query(AlarmEvent)
+    if user:
+        q = q.filter(AlarmEvent.user_id == user.id)
+    else:
+        q = q.filter(AlarmEvent.user_id.is_(None))
     if zone_id is not None:
         q = q.filter(AlarmEvent.zone_id == zone_id)
     return q.order_by(AlarmEvent.triggered_at.desc()).limit(min(limit, 500)).all()
 
 
 @app.delete("/api/alarm-events", status_code=204)
-def clear_alarm_events(db: Session = Depends(get_db)):
-    db.query(AlarmEvent).delete()
+def clear_alarm_events(
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+):
+    q = db.query(AlarmEvent)
+    if user:
+        q = q.filter(AlarmEvent.user_id == user.id)
+    else:
+        q = q.filter(AlarmEvent.user_id.is_(None))
+    q.delete()
     db.commit()
 
 

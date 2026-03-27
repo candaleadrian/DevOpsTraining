@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { ScreenLayout } from '../ui/ScreenLayout';
 import {
   AlarmMode,
@@ -10,6 +11,7 @@ import {
   AlarmPreferences,
 } from '../services/alarmPreferences';
 import { fireAlarm } from '../services/alarmTrigger';
+import { useAuth } from '../context/AuthContext';
 
 const MODES: { value: AlarmMode; label: string }[] = [
   { value: 'notification', label: '🔔 Notification' },
@@ -29,10 +31,25 @@ const RADIUS_STEPS = [10, 25, 50, 100, 250, 500];
 
 export function SettingsScreen() {
   const [prefs, setPrefs] = useState<AlarmPreferences>(getAlarmPreferences);
+  const { user, isGuest, logout } = useAuth();
+  const navigation = useNavigation();
 
   useEffect(() => subscribeAlarmPreferences(setPrefs), []);
 
   const update = (partial: Partial<AlarmPreferences>) => setAlarmPreferences(partial);
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'Auth' as never }] }),
+    );
+  };
+
+  const handleSignIn = () => {
+    navigation.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'Auth' as never }] }),
+    );
+  };
 
   return (
     <ScreenLayout
@@ -40,6 +57,24 @@ export function SettingsScreen() {
       title="Alarm Preferences"
       description="Choose how the proximity alarm notifies you when you enter the radius."
     >
+      {/* Account */}
+      <Text style={s.sectionTitle}>Account</Text>
+      {isGuest ? (
+        <View style={s.accountRow}>
+          <Text style={s.accountText}>Guest mode (max 3 zones)</Text>
+          <Pressable style={s.signInBtn} onPress={handleSignIn}>
+            <Text style={s.signInBtnText}>Sign In</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={s.accountRow}>
+          <Text style={s.accountText}>{user?.email}</Text>
+          <Pressable style={s.logoutBtn} onPress={handleLogout}>
+            <Text style={s.logoutBtnText}>Sign Out</Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* Alarm mode */}
       <Text style={s.sectionTitle}>Alarm mode</Text>
       <View style={s.row}>
@@ -137,6 +172,12 @@ export function SettingsScreen() {
 const s = StyleSheet.create({
   sectionTitle: { fontSize: 14, fontWeight: '700', color: '#8a5a44', marginTop: 18, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e7d8c9' },
+  accountText: { fontSize: 14, color: '#1f2a37', fontWeight: '600', flex: 1 },
+  logoutBtn: { backgroundColor: '#dc2626', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+  logoutBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  signInBtn: { backgroundColor: '#8a5a44', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+  signInBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#e7d8c9' },
   chipActive: { backgroundColor: '#8a5a44' },
   chipText: { fontSize: 14, color: '#1f2a37', fontWeight: '600' },

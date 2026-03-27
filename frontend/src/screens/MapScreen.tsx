@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Animated } from 'react-native';
 import { fireAlarm, stopAlarm } from '../services/alarmTrigger';
 import { zonesApi, AlarmZone } from '../services/zonesApi';
+import { guestZonesApi, MAX_GUEST_ZONES } from '../services/guestZonesApi';
 import { historyApi } from '../services/historyApi';
 import { watchPosition, clearWatch, startBackgroundTracking, stopBackgroundTracking } from '../services/locationTracker';
 import PlatformMap from '../components/PlatformMap';
 import { ZONE_COLOURS, PlatformMapRef } from '../components/PlatformMap.types';
 import LocationSearch from '../components/LocationSearch';
 import { getAlarmPreferences, subscribeAlarmPreferences } from '../services/alarmPreferences';
+import { useAuth } from '../context/AuthContext';
 
 // Toast component for showing feedback
 function Toast({ message, type, onDone }: { message: string; type: 'success' | 'error'; onDone: () => void }) {
@@ -48,6 +50,8 @@ function haversineMetres(lat1: number, lon1: number, lat2: number, lon2: number)
 type LatLng = { lat: number; lng: number };
 
 export function MapScreen() {
+  const { isGuest } = useAuth();
+  const api = isGuest ? guestZonesApi : zonesApi;
   const [zones, setZones] = useState<AlarmZone[]>([]);
   const [pendingPoint, setPendingPoint] = useState<LatLng | null>(null);
   const [pendingRadius, setPendingRadius] = useState(500);
@@ -94,12 +98,12 @@ export function MapScreen() {
   // ---- Load saved zones on mount -----------------------------------------
   const loadZones = useCallback(async () => {
     try {
-      const data = await zonesApi.list();
+      const data = await api.list();
       setZones(data);
     } catch (e) {
       console.error('Failed to load zones:', e);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     loadZones();
@@ -165,7 +169,7 @@ export function MapScreen() {
     if (!pendingPoint) return;
     const name = pendingName.trim() || `Zone ${zones.length + 1}`;
     try {
-      await zonesApi.create({
+      await api.create({
         name,
         latitude: pendingPoint.lat,
         longitude: pendingPoint.lng,
@@ -176,9 +180,10 @@ export function MapScreen() {
       setPendingRadius(500);
       await loadZones();
       showToast(`"${name}" added`);
-    } catch (e) {
+    } catch (e: any) {
+      const msg = e?.message || 'Failed to save zone';
       console.error('Failed to save zone:', e);
-      showToast('Failed to save zone', 'error');
+      showToast(msg, 'error');
     }
   }, [pendingPoint, pendingName, pendingRadius, zones.length, loadZones, showToast]);
 
@@ -186,7 +191,7 @@ export function MapScreen() {
   const deleteZone = useCallback(async (id: number) => {
     const zone = zones.find((z) => z.id === id);
     try {
-      await zonesApi.remove(id);
+      await api.remove(id);
       setConfirmDeleteId(null);
       await loadZones();
       showToast(`"${zone?.name ?? 'Zone'}" removed`);
@@ -231,7 +236,7 @@ export function MapScreen() {
     if (!editingZone) return;
     const name = editName.trim() || editingZone.name;
     try {
-      await zonesApi.update(editingZone.id, {
+      await api.update(editingZone.id, {
         name,
         radius_meters: editRadius,
         latitude: editingZone.latitude,
@@ -350,7 +355,9 @@ export function MapScreen() {
               style={styles.cardHeader}
               onPress={() => setZonesExpanded((v) => !v)}
             >
-              <Text style={styles.cardTitle}>Saved Zones ({zones.length})</Text>
+              <Text style={styles.cardTitle}>
+                Saved Zones ({zones.length}{isGuest ? `/${MAX_GUEST_ZONES}` : ''})
+              </Text>
               <Text style={styles.cardToggle}>{zonesExpanded ? '▲' : '▼'}</Text>
             </Pressable>
             {zonesExpanded && <ScrollView style={{ maxHeight: 200 }}>

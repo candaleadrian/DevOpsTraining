@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { getApiBaseUrl } from '../config/api';
+import apiClient from '../config/apiClient';
 
-const API = axios.create({ baseURL: getApiBaseUrl() ?? '' });
+const API = apiClient;
 
 export interface AlarmZone {
   id: number;

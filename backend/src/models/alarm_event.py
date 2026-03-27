@@ -7,6 +7,9 @@ class AlarmEvent(Base):
     __tablename__ = "alarm_events"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     zone_id = Column(
         Integer, ForeignKey("alarm_zones.id", ondelete="SET NULL"), nullable=True
     )
