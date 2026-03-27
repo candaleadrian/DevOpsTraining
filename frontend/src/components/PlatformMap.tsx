@@ -17,7 +17,7 @@ function useLeafletCSS() {
 }
 
 const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function PlatformMap(
-  { zones, userPos, pendingPoint, pendingRadius, onMapPress, onLocate },
+  { zones, userPos, pendingPoint, pendingRadius, monitoring, onMapPress, onLocate },
   ref,
 ) {
   useLeafletCSS();
@@ -31,6 +31,12 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
   const [mapReady, setMapReady] = useState(false);
   const onMapPressRef = useRef(onMapPress);
   onMapPressRef.current = onMapPress;
+  const onLocateRef = useRef(onLocate);
+  onLocateRef.current = onLocate;
+  const monitoringRef = useRef(monitoring);
+  monitoringRef.current = monitoring;
+  const userPosRef = useRef(userPos);
+  userPosRef.current = userPos;
 
   // Expose animateTo method to parent
   useImperativeHandle(ref, () => ({
@@ -66,11 +72,17 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
           L.DomEvent.disableClickPropagation(btn);
           btn.addEventListener('click', (e: Event) => {
             e.preventDefault();
+            // During monitoring, userPos is continuously updated — pan to it directly
+            // to avoid getCurrentPosition stalling while watchPosition is active
+            if (monitoringRef.current && userPosRef.current) {
+              map.setView([userPosRef.current.lat, userPosRef.current.lng], 15, { animate: true });
+              return;
+            }
             if ('geolocation' in navigator) {
               navigator.geolocation.getCurrentPosition(
                 (pos) => {
                   map.setView([pos.coords.latitude, pos.coords.longitude], 15, { animate: true });
-                  onLocate?.({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                  onLocateRef.current?.({ lat: pos.coords.latitude, lng: pos.coords.longitude });
                 },
                 () => {},
                 { enableHighAccuracy: true },

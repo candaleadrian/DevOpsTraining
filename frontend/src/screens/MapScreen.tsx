@@ -111,9 +111,10 @@ export function MapScreen() {
 
   // ---- Check proximity against all zones ---------------------------------
   useEffect(() => {
-    if (!userPos || zones.length === 0) {
+    if (!monitoring || !userPos || zones.length === 0) {
       setProximityResults([]);
       firedAlarmsRef.current.clear();
+      if (!monitoring) stopAlarm();
       return;
     }
 
@@ -166,7 +167,7 @@ export function MapScreen() {
     if (firedAlarmsRef.current.size === 0 && alarming.length === 0) {
       stopAlarm();
     }
-  }, [userPos, zones]);
+  }, [monitoring, userPos, zones]);
 
   // ---- Save pending zone -------------------------------------------------
   const saveZone = useCallback(async () => {
@@ -304,6 +305,7 @@ export function MapScreen() {
           pendingRadius={repositioning && editingZone ? editRadius : pendingRadius}
           onMapPress={handleMapPress}
           onLocate={(pos) => setUserPos(pos)}
+          monitoring={monitoring}
         />
         <LocationSearch onSelect={handleSearchSelect} />
       </View>

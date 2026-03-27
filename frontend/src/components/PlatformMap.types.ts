@@ -14,6 +14,7 @@ export interface PlatformMapProps {
   userPos: LatLng | null;
   pendingPoint: LatLng | null;
   pendingRadius: number;
+  monitoring?: boolean;
   onMapPress: (point: LatLng) => void;
   onLocate?: (pos: LatLng) => void;
 }
