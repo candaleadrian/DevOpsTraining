@@ -1,4 +1,5 @@
 """Tests for authentication endpoints and user-scoped data isolation."""
+
 import pytest
 from fastapi.testclient import TestClient
 from src.main import app
@@ -41,9 +42,7 @@ def test_register_duplicate_email(client):
 
 
 def test_register_short_password(client):
-    r = client.post(
-        "/auth/register", json={"email": "a@b.com", "password": "12345"}
-    )
+    r = client.post("/auth/register", json={"email": "a@b.com", "password": "12345"})
     assert r.status_code == 422
 
 
@@ -151,7 +150,5 @@ def test_user_cannot_delete_other_user_zone(client):
     ).json()
 
     token_b = _register(client, email="b@test.com").json()["access_token"]
-    r = client.delete(
-        f"/api/zones/{zone['id']}", headers=_auth_header(token_b)
-    )
+    r = client.delete(f"/api/zones/{zone['id']}", headers=_auth_header(token_b))
     assert r.status_code == 404
