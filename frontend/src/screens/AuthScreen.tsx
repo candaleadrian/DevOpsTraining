@@ -4,7 +4,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 export function AuthScreen() {
-  const { login, register } = useAuth();
+  const { login, register, logout } = useAuth();
   const navigation = useNavigation();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -96,7 +96,10 @@ export function AuthScreen() {
 
       <Pressable
         style={styles.guestBtn}
-        onPress={goToApp}
+        onPress={async () => {
+          await logout();
+          goToApp();
+        }}
       >
         <Text style={styles.guestBtnText}>Continue as Guest (max 3 zones)</Text>
       </Pressable>

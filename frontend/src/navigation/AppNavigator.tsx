@@ -67,7 +67,7 @@ export function AppNavigator() {
 }
 
 function AppNavigatorInner() {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -79,7 +79,7 @@ function AppNavigatorInner() {
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      <Stack.Navigator>
+      <Stack.Navigator initialRouteName={user ? 'MainTabs' : 'Auth'}>
         <Stack.Screen
           name="Auth"
           component={AuthScreen}

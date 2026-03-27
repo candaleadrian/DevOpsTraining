@@ -1,6 +1,6 @@
 // PlatformMap — web implementation using Leaflet
 
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { PlatformMapProps, PlatformMapRef, ZONE_COLOURS } from './PlatformMap.types';
 
 // Leaflet CSS injected once
@@ -28,6 +28,9 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
   const zoneLayersRef = useRef<Map<number, { marker: any; circle: any }>>(new Map());
   const pendingMarkerRef = useRef<any>(null);
   const pendingCircleRef = useRef<any>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const onMapPressRef = useRef(onMapPress);
+  onMapPressRef.current = onMapPress;
 
   // Expose animateTo method to parent
   useImperativeHandle(ref, () => ({
@@ -83,10 +86,11 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
       }).addTo(map);
 
       map.on('click', (e: any) => {
-        onMapPress({ lat: e.latlng.lat, lng: e.latlng.lng });
+        onMapPressRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
       });
 
       mapRef.current = map;
+      setMapReady(true);
 
       // Centre on user if geolocation available
       if ('geolocation' in navigator) {
@@ -103,7 +107,7 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
 
   // Draw saved zones
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapReady) return;
     (async () => {
       const L = await import('leaflet');
       const map = mapRef.current;
@@ -128,7 +132,7 @@ const PlatformMap = forwardRef<PlatformMapRef, PlatformMapProps>(function Platfo
         zoneLayersRef.current.set(z.id, { marker, circle });
       });
     })();
-  }, [zones]);
+  }, [zones, mapReady]);
 
   // Draw pending point
   useEffect(() => {

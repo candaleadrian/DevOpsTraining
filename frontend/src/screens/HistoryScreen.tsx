@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { historyApi, AlarmEvent } from '../services/historyApi';
+import { useAuth } from '../context/AuthContext';
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -16,10 +17,12 @@ function formatTime(iso: string): string {
 }
 
 export function HistoryScreen() {
+  const { isGuest } = useAuth();
   const [events, setEvents] = useState<AlarmEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isGuest);
 
   const loadEvents = useCallback(async () => {
+    if (isGuest) return;
     setLoading(true);
     try {
       const data = await historyApi.list({ limit: 100 });
@@ -29,7 +32,7 @@ export function HistoryScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => {
     loadEvents();
@@ -79,8 +82,8 @@ export function HistoryScreen() {
 
       {events.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyText}>No alarm events yet.</Text>
-          <Text style={styles.emptyHint}>Events will appear here when you enter or exit an alarm zone.</Text>
+          <Text style={styles.emptyText}>{isGuest ? 'History not available for guests.' : 'No alarm events yet.'}</Text>
+          <Text style={styles.emptyHint}>{isGuest ? 'Sign in to track alarm history across devices.' : 'Events will appear here when you enter or exit an alarm zone.'}</Text>
         </View>
       ) : (
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>

@@ -133,14 +133,16 @@ export function MapScreen() {
       if (!firedAlarmsRef.current.has(r.zone_id)) {
         fireAlarm(r.distance, zones.find((z) => z.id === r.zone_id)?.radius_meters ?? 500);
         firedAlarmsRef.current.add(r.zone_id);
-        historyApi.create({
-          zone_id: r.zone_id,
-          zone_name: r.name,
-          event_type: 'entered',
-          distance_meters: r.distance,
-          latitude: userPos.lat,
-          longitude: userPos.lng,
-        }).catch((e: unknown) => console.error('Failed to log alarm event:', e));
+        if (!isGuest) {
+          historyApi.create({
+            zone_id: r.zone_id,
+            zone_name: r.name,
+            event_type: 'entered',
+            distance_meters: r.distance,
+            latitude: userPos.lat,
+            longitude: userPos.lng,
+          }).catch((e: unknown) => console.error('Failed to log alarm event:', e));
+        }
       }
     }
 
@@ -148,14 +150,16 @@ export function MapScreen() {
       if (!alarmingIds.has(id)) {
         const zone = zones.find((z) => z.id === id);
         const pr = results.find((r) => r.zone_id === id);
-        historyApi.create({
-          zone_id: id,
-          zone_name: zone?.name ?? `Zone ${id}`,
-          event_type: 'exited',
-          distance_meters: pr?.distance ?? 0,
-          latitude: userPos.lat,
-          longitude: userPos.lng,
-        }).catch((e: unknown) => console.error('Failed to log exit event:', e));
+        if (!isGuest) {
+          historyApi.create({
+            zone_id: id,
+            zone_name: zone?.name ?? `Zone ${id}`,
+            event_type: 'exited',
+            distance_meters: pr?.distance ?? 0,
+            latitude: userPos.lat,
+            longitude: userPos.lng,
+          }).catch((e: unknown) => console.error('Failed to log exit event:', e));
+        }
         firedAlarmsRef.current.delete(id);
       }
     }
