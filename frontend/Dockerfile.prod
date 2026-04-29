@@ -1,0 +1,41 @@
+# =============================================================================
+# Production / Kubernetes Dockerfile
+# =============================================================================
+# Multi-stage build:
+#   Stage 1 (build): Install deps, run `expo export` to produce static HTML/JS/CSS
+#   Stage 2 (serve): Copy static files into a lightweight image with `serve`
+#
+# The Expo dev server (Metro Bundler) is too resource-heavy for Kubernetes.
+# Instead, we pre-compile everything into static files at build time and
+# serve them with a simple HTTP server.
+# =============================================================================
+
+# --- Stage 1: Build the static web bundle ---
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# The API URL is baked into the static build at compile time.
+# Pass it as a build arg: docker build --build-arg EXPO_PUBLIC_API_BASE_URL=http://...
+ARG EXPO_PUBLIC_API_BASE_URL
+ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL
+
+RUN npx expo export --platform web
+
+# --- Stage 2: Serve the static files ---
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=build /app/dist ./dist
+
+EXPOSE 8081
+
+CMD ["serve", "dist", "-l", "8081"]

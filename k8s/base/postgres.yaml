@@ -1,0 +1,145 @@
+# =============================================================================
+# POSTGRESQL — PersistentVolumeClaim, Deployment, and Service
+# =============================================================================
+#
+# In docker-compose you had:
+#   postgres:
+#     image: postgres:15-alpine
+#     volumes: [postgres_data:/var/lib/postgresql/data]
+#
+# In Kubernetes, we need 3 separate resources to achieve the same thing.
+# They are separated by "---" in a single file (multi-document YAML).
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. PersistentVolumeClaim (PVC)
+# -----------------------------------------------------------------------------
+# A PVC is a REQUEST for storage. It's like saying "I need 1GB of disk space."
+# Kubernetes finds available storage and binds it to this claim.
+#
+# This replaces: volumes: [postgres_data:/var/lib/postgresql/data]
+# Without a PVC, data is lost when the pod restarts!
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: proximity-alarm
+spec:
+  accessModes:
+    - ReadWriteOnce              # Only one pod can write at a time (fine for a single DB)
+  resources:
+    requests:
+      storage: 1Gi               # Request 1GB of storage (plenty for development)
+
+---
+
+# -----------------------------------------------------------------------------
+# 2. Deployment
+# -----------------------------------------------------------------------------
+# A Deployment tells Kubernetes: "Run X copies (replicas) of this container."
+# If a pod crashes, the Deployment automatically recreates it.
+#
+# This replaces the docker-compose service definition (image, environment, etc.)
+#
+# KEY CONCEPTS:
+# - replicas: how many copies to run (1 for a database — you don't want two DBs!)
+# - selector.matchLabels: how the Deployment finds its pods
+# - template: the blueprint for each pod (containers, volumes, env vars)
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: proximity-alarm
+  labels:
+    app: proximity-alarm
+    component: database            # Labels help you filter: kubectl get pods -l component=database
+spec:
+  replicas: 1                      # Only 1 replica — databases need special handling for multiple copies
+  selector:
+    matchLabels:
+      component: database          # "Find pods with this label and manage them"
+  template:                        # ← This is the Pod template (blueprint for each pod)
+    metadata:
+      labels:
+        app: proximity-alarm
+        component: database        # Must match selector.matchLabels above!
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine    # Same image as docker-compose
+          imagePullPolicy: Never       # Use locally-loaded image (no internet needed)
+          ports:
+            - containerPort: 5432      # Expose port 5432 inside the cluster
+          env:
+            # Instead of plain text env vars, we reference the Secret we created.
+            # This keeps credentials out of the Deployment spec.
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret      # References our Secret
+                  key: POSTGRES_USER         # Which key in the Secret
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data    # Same path as docker-compose
+          # Readiness probe: K8s checks if PostgreSQL is ready to accept connections.
+          # Other pods won't get traffic routed to this pod until it's ready.
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "devops_user", "-d", "proximity_alarm"]
+            initialDelaySeconds: 5       # Wait 5s before first check
+            periodSeconds: 10            # Check every 10s
+          # Liveness probe: K8s restarts the pod if PostgreSQL becomes unresponsive.
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "devops_user", "-d", "proximity_alarm"]
+            initialDelaySeconds: 15      # Give DB time to start before checking
+            periodSeconds: 20
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc      # Connect to the PVC defined above
+
+---
+
+# -----------------------------------------------------------------------------
+# 3. Service
+# -----------------------------------------------------------------------------
+# A Service gives your pods a stable DNS name and IP address.
+# Without a Service, pods can't reliably find each other (pod IPs change on restart).
+#
+# After creating this, other pods can connect to: postgres.proximity-alarm.svc.cluster.local:5432
+# Or simply: postgres:5432 (within the same namespace)
+#
+# This replaces Docker Compose's automatic DNS (where service names = hostnames).
+#
+# TYPE: ClusterIP (default) = only accessible within the cluster. Perfect for a DB.
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: proximity-alarm
+  labels:
+    app: proximity-alarm
+    component: database
+spec:
+  type: ClusterIP                  # Internal only — no external access needed for DB
+  selector:
+    component: database            # "Route traffic to pods with this label"
+  ports:
+    - port: 5432                   # The port other pods use to connect
+      targetPort: 5432             # The port on the container
+      protocol: TCP

@@ -1,0 +1,265 @@
+# =============================================================================
+# GRAFANA — ConfigMap (Datasource), Deployment, and Service
+# =============================================================================
+#
+# WHAT IS GRAFANA?
+# Grafana is a visualization platform. It connects to data sources (like
+# Prometheus) and lets you build dashboards with graphs, gauges, and alerts.
+#
+# FLOW: Prometheus (collects metrics) → Grafana (queries & displays them)
+#
+# We'll pre-configure Grafana to automatically connect to Prometheus so you
+# don't have to set it up manually through the UI.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. ConfigMap — Grafana Datasource Configuration
+# -----------------------------------------------------------------------------
+# Grafana supports "provisioning" — auto-configuring datasources and dashboards
+# from files. We provide a YAML file that tells Grafana: "Connect to Prometheus
+# at this URL."
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+data:
+  # This file is mounted at /etc/grafana/provisioning/datasources/
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus                      # Name shown in Grafana UI
+        type: prometheus                      # Datasource type
+        access: proxy                         # "proxy" = Grafana server fetches data (not browser)
+        url: http://prometheus:9090           # Prometheus Service DNS within the same namespace
+        isDefault: true                       # Make this the default datasource
+        editable: true                        # Allow editing in the UI
+
+---
+
+# -----------------------------------------------------------------------------
+# 2. ConfigMap — Pre-built Dashboard
+# -----------------------------------------------------------------------------
+# We provision a dashboard that shows key metrics from the backend.
+# This file is mounted at /etc/grafana/provisioning/dashboards/ and tells
+# Grafana where to find dashboard JSON files.
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: monitoring
+data:
+  dashboard.yml: |
+    apiVersion: 1
+    providers:
+      - name: "default"
+        orgId: 1
+        folder: ""
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards   # Where dashboard JSON files are stored
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+data:
+  # A pre-built dashboard JSON that shows backend metrics
+  backend-dashboard.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "title": "HTTP Request Rate (per second)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "rate(http_requests_total[1m])",
+              "legendFormat": "{{method}} {{path}} ({{status}})"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "title": "HTTP Request Duration (p95)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+              "legendFormat": "p95 latency"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "title": "HTTP Requests by Status Code",
+          "type": "piechart",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "sum by (status) (http_requests_total)",
+              "legendFormat": "{{status}}"
+            }
+          ]
+        },
+        {
+          "title": "Active HTTP Requests",
+          "type": "gauge",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "http_requests_in_progress",
+              "legendFormat": "in-progress"
+            }
+          ]
+        },
+        {
+          "title": "Process Memory (RSS)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "process_resident_memory_bytes",
+              "legendFormat": "RSS"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["proximity-alarm", "backend"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Proximity Alarm - Backend",
+      "uid": "proximity-alarm-backend",
+      "version": 1
+    }
+
+---
+
+# -----------------------------------------------------------------------------
+# 3. Deployment
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.4.1        # Official Grafana image
+          imagePullPolicy: Never               # Use locally-loaded image
+          ports:
+            - containerPort: 3000              # Grafana web UI
+          env:
+            # Default admin credentials (change in production!)
+            - name: GF_SECURITY_ADMIN_USER
+              value: "admin"
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin"
+            # Allow anonymous access for easier development
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Viewer"
+          volumeMounts:
+            # Mount the datasource config
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            # Mount the dashboard provider config
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            # Mount the actual dashboard JSON files
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
+
+---
+
+# -----------------------------------------------------------------------------
+# 4. Service
+# -----------------------------------------------------------------------------
+# NodePort so we can access Grafana from the browser.
+# Access at: http://$(minikube ip):30030
+# Login: admin / admin
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30030                # Access Grafana at this external port
+      protocol: TCP

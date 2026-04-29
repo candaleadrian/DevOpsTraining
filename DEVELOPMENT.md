@@ -44,6 +44,38 @@ Open http://localhost:8081 in your browser to use the app.
 | Health Check | http://localhost:8000/health | Service health status |
 | PostgreSQL | localhost:5432 | Database (`make psql`) |
 
+## Kubernetes (Minikube)
+
+### Quick Start
+
+```bash
+make k8s-start          # Start minikube cluster
+make k8s-build          # Build & load images into minikube
+make k8s-deploy-all     # Deploy app + monitoring stack
+make k8s-forward        # Port-forward all services (needed for WSL2)
+```
+
+### Access Points (after `make k8s-forward`)
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Frontend | http://localhost:8081 | — |
+| Backend API | http://localhost:8000 | — |
+| API Docs | http://localhost:8000/docs | — |
+| Prometheus | http://localhost:9090 | — |
+| Grafana | http://localhost:3000 | admin / admin |
+
+### Useful Commands
+
+```bash
+make k8s-status         # Pod & service status
+make k8s-logs           # Tail all pod logs
+make k8s-forward-stop   # Stop port-forwards
+make k8s-delete         # Remove all K8s resources
+make k8s-stop           # Stop minikube (preserves state)
+make k8s-destroy        # Delete minikube cluster entirely
+```
+
 ## Development Workflow
 
 ### Daily Start

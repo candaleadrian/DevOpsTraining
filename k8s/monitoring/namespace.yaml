@@ -1,0 +1,13 @@
+# =============================================================================
+# MONITORING NAMESPACE
+# =============================================================================
+# We keep monitoring tools (Prometheus, Grafana) in a separate namespace.
+# This is a best practice: monitoring infrastructure is independent of
+# your application. You can delete/redeploy the app without losing monitoring.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    purpose: monitoring

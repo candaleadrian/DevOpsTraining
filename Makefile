@@ -1,7 +1,9 @@
 # Makefile for Proximity Alarm Application
 # Common DevOps commands for local development
 
-.PHONY: help setup setup-backend setup-frontend up down logs clean test lint deploy-local
+.PHONY: help setup setup-backend setup-frontend up down logs clean test lint deploy-local \
+       k8s-start k8s-stop k8s-build k8s-deploy k8s-deploy-monitoring k8s-deploy-all \
+       k8s-status k8s-logs k8s-dashboard k8s-urls k8s-delete
 
 help:
 	@echo "Proximity Alarm App - DevOps Learning"
@@ -208,3 +210,176 @@ first-run: clean setup up
 	@echo "3. Make your first commit: make ready-to-commit"
 	@echo ""
 	@echo "Documentation: See DEVELOPMENT.md"
+
+# =============================================================================
+# KUBERNETES — Local Development with Minikube
+# =============================================================================
+# These targets let you run the entire app in a local Kubernetes cluster.
+#
+# Quick start:
+#   make k8s-start         # Start minikube cluster
+#   make k8s-deploy-all    # Build images + deploy everything
+#   make k8s-urls          # Show URLs to access services
+#
+# Architecture:
+#   minikube cluster
+#   ├── proximity-alarm namespace (app)
+#   │   ├── postgres (Deployment + Service + PVC)
+#   │   ├── backend  (Deployment + NodePort Service)
+#   │   └── frontend (Deployment + NodePort Service)
+#   └── monitoring namespace
+#       ├── prometheus (Deployment + NodePort Service)
+#       └── grafana    (Deployment + NodePort Service)
+# =============================================================================
+
+# Start the minikube cluster (only needed once)
+k8s-start:
+	@echo "Starting minikube cluster..."
+	minikube start --driver=docker
+	@echo "✓ Minikube cluster started"
+	@echo "  Run 'make k8s-deploy-all' to deploy everything"
+
+# Stop the minikube cluster (preserves state)
+k8s-stop:
+	@echo "Stopping minikube cluster..."
+	minikube stop
+	@echo "✓ Minikube stopped (state preserved, use 'make k8s-start' to resume)"
+
+# Build Docker images locally, then load them into minikube.
+# WHY: Minikube has its own Docker daemon and can't see your local images.
+# We build with local Docker (which has network access), then use
+# 'minikube image load' to copy the images into minikube's daemon.
+# We also pre-load third-party images (postgres, prometheus, grafana)
+# so minikube doesn't need to pull them from the internet.
+k8s-build:
+	@echo "Building images with local Docker..."
+	docker build -t proximity-alarm-backend:latest backend/
+	docker build -t proximity-alarm-frontend:static-v1 -f frontend/Dockerfile.prod --build-arg EXPO_PUBLIC_API_BASE_URL=http://localhost:8000 frontend/
+	@echo "Loading app images into minikube..."
+	minikube image load proximity-alarm-backend:latest
+	minikube image load proximity-alarm-frontend:static-v1
+	@echo "Loading third-party images into minikube..."
+	docker pull postgres:15-alpine 2>/dev/null || true
+	docker pull prom/prometheus:v2.51.0 2>/dev/null || true
+	docker pull grafana/grafana:10.4.1 2>/dev/null || true
+	minikube image load postgres:15-alpine
+	minikube image load prom/prometheus:v2.51.0
+	minikube image load grafana/grafana:10.4.1
+	@echo "✓ All images loaded into minikube"
+
+# Deploy the application (postgres, backend, frontend)
+k8s-deploy:
+	@echo "Deploying application to Kubernetes..."
+	kubectl apply -f k8s/base/namespace.yaml
+	kubectl apply -f k8s/base/secrets.yaml
+	kubectl apply -f k8s/base/postgres.yaml
+	@echo "Waiting for PostgreSQL to be ready..."
+	kubectl wait --for=condition=ready pod -l component=database -n proximity-alarm --timeout=120s
+	kubectl apply -f k8s/base/backend.yaml
+	kubectl apply -f k8s/base/frontend.yaml
+	@echo "✓ Application deployed"
+	@echo "  Waiting for pods to be ready..."
+	kubectl wait --for=condition=ready pod -l component=backend -n proximity-alarm --timeout=120s || true
+	kubectl wait --for=condition=ready pod -l component=frontend -n proximity-alarm --timeout=120s || true
+	@echo "✓ All application pods ready"
+
+# Deploy monitoring (Prometheus + Grafana)
+k8s-deploy-monitoring:
+	@echo "Deploying monitoring stack..."
+	kubectl apply -f k8s/monitoring/namespace.yaml
+	kubectl apply -f k8s/monitoring/prometheus.yaml
+	kubectl apply -f k8s/monitoring/grafana.yaml
+	@echo "Waiting for monitoring pods..."
+	kubectl wait --for=condition=ready pod -l app=prometheus -n monitoring --timeout=120s || true
+	kubectl wait --for=condition=ready pod -l app=grafana -n monitoring --timeout=120s || true
+	@echo "✓ Monitoring stack deployed"
+
+# Deploy everything: build images + deploy app + deploy monitoring
+k8s-deploy-all: k8s-build k8s-deploy k8s-deploy-monitoring
+	@echo ""
+	@echo "🎉 Full Kubernetes deployment complete!"
+	@$(MAKE) k8s-urls
+
+# Show service URLs
+k8s-urls:
+	@echo ""
+	@echo "=== Service URLs ==="
+	@echo "  Backend API:  http://$$(minikube ip):30080"
+	@echo "  API Docs:     http://$$(minikube ip):30080/docs"
+	@echo "  Frontend:     http://$$(minikube ip):30081"
+	@echo "  Prometheus:   http://$$(minikube ip):30090"
+	@echo "  Grafana:      http://$$(minikube ip):30030"
+	@echo ""
+	@echo "  Grafana login: admin / admin"
+	@echo ""
+	@echo "NOTE: These URLs only work inside WSL."
+	@echo "For Windows browser access, run: make k8s-forward"
+
+# Port-forward all services to localhost (accessible from Windows browser)
+# WHY: In WSL2, the minikube IP (192.168.49.x) is on an internal virtual network
+# that Windows can't reach. kubectl port-forward binds to localhost inside WSL,
+# and WSL2 automatically makes localhost accessible from Windows.
+#
+# This runs all port-forwards in the background. Use 'make k8s-forward-stop' to stop them.
+k8s-forward:
+	@echo "Starting port-forwards (accessible from Windows browser)..."
+	@kubectl port-forward svc/backend 8000:8000 -n proximity-alarm --address 0.0.0.0 > /dev/null 2>&1 &
+	@kubectl port-forward svc/frontend 8081:8081 -n proximity-alarm --address 0.0.0.0 > /dev/null 2>&1 &
+	@kubectl port-forward svc/prometheus 9090:9090 -n monitoring --address 0.0.0.0 > /dev/null 2>&1 &
+	@kubectl port-forward svc/grafana 3000:3000 -n monitoring --address 0.0.0.0 > /dev/null 2>&1 &
+	@sleep 2
+	@echo ""
+	@echo "✓ Port-forwards active! Open in Windows browser:"
+	@echo "  Backend API:  http://localhost:8000"
+	@echo "  API Docs:     http://localhost:8000/docs"
+	@echo "  Frontend:     http://localhost:8081"
+	@echo "  Prometheus:   http://localhost:9090"
+	@echo "  Grafana:      http://localhost:3000  (admin / admin)"
+	@echo ""
+	@echo "  Stop with: make k8s-forward-stop"
+
+# Stop all port-forwards
+k8s-forward-stop:
+	@echo "Stopping port-forwards..."
+	@pkill -f "kubectl port-forward svc/" 2>/dev/null; true
+	@echo "✓ Port-forwards stopped"
+
+# Show status of all K8s resources
+k8s-status:
+	@echo "=== Pods ==="
+	@kubectl get pods -n proximity-alarm -o wide 2>/dev/null || echo "  (namespace not found)"
+	@echo ""
+	@echo "=== Monitoring Pods ==="
+	@kubectl get pods -n monitoring -o wide 2>/dev/null || echo "  (namespace not found)"
+	@echo ""
+	@echo "=== Services ==="
+	@kubectl get services -n proximity-alarm 2>/dev/null || true
+	@kubectl get services -n monitoring 2>/dev/null || true
+
+# View logs for a specific component (usage: make k8s-logs SVC=backend)
+k8s-logs:
+	@if [ -z "$(SVC)" ]; then \
+		echo "Usage: make k8s-logs SVC=backend|frontend|postgres|prometheus|grafana"; \
+	elif [ "$(SVC)" = "prometheus" ] || [ "$(SVC)" = "grafana" ]; then \
+		kubectl logs -f -l app=$(SVC) -n monitoring; \
+	else \
+		kubectl logs -f -l component=$(SVC) -n proximity-alarm; \
+	fi
+
+# Open the Kubernetes dashboard (built into minikube)
+k8s-dashboard:
+	@echo "Opening Kubernetes Dashboard..."
+	minikube dashboard
+
+# Delete all K8s resources (clean slate)
+k8s-delete:
+	@echo "Deleting all Kubernetes resources..."
+	kubectl delete -f k8s/monitoring/ --ignore-not-found=true
+	kubectl delete -f k8s/base/ --ignore-not-found=true
+	@echo "✓ All K8s resources deleted"
+
+# Destroy the entire minikube cluster
+k8s-destroy:
+	@echo "Destroying minikube cluster..."
+	minikube delete
+	@echo "✓ Minikube cluster destroyed"

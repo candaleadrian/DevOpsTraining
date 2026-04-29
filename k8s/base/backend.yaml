@@ -1,0 +1,118 @@
+# =============================================================================
+# BACKEND (FastAPI) — Deployment and Service
+# =============================================================================
+#
+# In docker-compose you had:
+#   backend:
+#     build: ./backend
+#     ports: ["8000:8000"]
+#     environment: {DATABASE_URL: postgresql://...@postgres:5432/proximity_alarm}
+#     depends_on: {postgres: condition: service_healthy}
+#     command: sh -c "alembic upgrade head && uvicorn ..."
+#
+# In Kubernetes:
+# - There's no "build" — you must have the image already built and available.
+#   We'll use minikube's built-in Docker daemon to build images locally.
+# - "depends_on" doesn't exist in K8s. Pods start independently. The backend's
+#   command retries connections (alembic will fail-and-retry, uvicorn reconnects).
+# - The Deployment creates pods; the Service makes them reachable.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Deployment
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: proximity-alarm
+  labels:
+    app: proximity-alarm
+    component: backend
+spec:
+  replicas: 1                        # 1 replica for dev; scale up for production
+  selector:
+    matchLabels:
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: proximity-alarm
+        component: backend
+      annotations:
+        # This annotation tells Prometheus: "Hey, scrape metrics from me!"
+        # Prometheus auto-discovers pods with these annotations.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: backend
+          image: proximity-alarm-backend:latest   # Built locally, loaded into minikube
+          imagePullPolicy: Never                  # Don't try to pull from Docker Hub — use local image
+          ports:
+            - containerPort: 8000
+          env:
+            # Build the DATABASE_URL from our Secret values.
+            # In docker-compose this was a single string; here we construct it
+            # from individual secret keys for better security.
+            - name: DATABASE_URL
+              value: "postgresql://devops_user:devops_password@postgres:5432/proximity_alarm"
+              # Note: In production, you'd use secretKeyRef for each part.
+              # For learning, a plain connection string is clearer.
+            - name: ENVIRONMENT
+              value: "development"
+          # Readiness probe: K8s checks /health to know when backend is ready
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10       # Backend needs time to run alembic migrations
+            periodSeconds: 5
+          # Liveness probe: K8s restarts the pod if /health stops responding
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            # Resource requests & limits prevent one pod from consuming all cluster resources.
+            # requests = guaranteed minimum; limits = maximum allowed.
+            requests:
+              memory: "128Mi"
+              cpu: "100m"              # 100m = 0.1 CPU cores
+            limits:
+              memory: "256Mi"
+              cpu: "500m"              # 500m = 0.5 CPU cores
+
+---
+
+# -----------------------------------------------------------------------------
+# 2. Service
+# -----------------------------------------------------------------------------
+# TYPE: NodePort — exposes the backend outside the cluster on a fixed port.
+# This lets you access the API from your browser via minikube's IP.
+#
+# ClusterIP: internal only (used for postgres)
+# NodePort:  accessible from outside the cluster on a port (30000-32767)
+# LoadBalancer: provisions a cloud load balancer (not available in minikube by default)
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: proximity-alarm
+  labels:
+    app: proximity-alarm
+    component: backend
+spec:
+  type: NodePort                     # Accessible from outside the cluster
+  selector:
+    component: backend
+  ports:
+    - port: 8000                     # Internal cluster port
+      targetPort: 8000               # Container port
+      nodePort: 30080                # External port you'll use to access the API
+      protocol: TCP
+      name: http

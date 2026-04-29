@@ -22,6 +22,7 @@ from src.auth import (
     get_current_user,
     require_user,
 )
+from prometheus_fastapi_instrumentator import Instrumentator
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Prometheus metrics — automatically instruments all routes.
+# Creates a /metrics endpoint that Prometheus scrapes every 15 seconds.
+# Tracks: request count, request duration, request size, response size.
+# ---------------------------------------------------------------------------
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 
 @app.exception_handler(Exception)

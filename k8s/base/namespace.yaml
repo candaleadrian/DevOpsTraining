@@ -1,0 +1,16 @@
+# =============================================================================
+# NAMESPACE
+# =============================================================================
+# A Namespace is like a "folder" inside Kubernetes. It groups related resources
+# together and prevents naming conflicts between different projects.
+#
+# WHY: We create a dedicated namespace so all our app resources (pods, services,
+# secrets) are isolated from the default namespace and easy to manage/delete.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: proximity-alarm
+  labels:
+    app: proximity-alarm          # Label for easy filtering: kubectl get all -l app=proximity-alarm
+    environment: development

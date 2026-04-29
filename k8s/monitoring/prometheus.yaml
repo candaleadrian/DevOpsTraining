@@ -1,0 +1,193 @@
+# =============================================================================
+# PROMETHEUS — ConfigMap, ClusterRole, Deployment, and Service
+# =============================================================================
+#
+# WHAT IS PROMETHEUS?
+# Prometheus is a monitoring system that collects metrics from your services.
+# It works by "scraping" — periodically sending HTTP requests to /metrics
+# endpoints and storing the responses as time-series data.
+#
+# FLOW: Your App → exposes /metrics → Prometheus scrapes it → stores data
+#       → Grafana queries Prometheus → displays dashboards
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. ConfigMap — Prometheus Configuration
+# -----------------------------------------------------------------------------
+# A ConfigMap stores non-sensitive configuration data as key-value pairs.
+# We use it to provide Prometheus its configuration file (prometheus.yml).
+#
+# This tells Prometheus:
+# - How often to scrape (every 15 seconds)
+# - WHERE to scrape (our backend service)
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    # ===========================================
+    # Prometheus Configuration File
+    # ===========================================
+    global:
+      scrape_interval: 15s          # How often to collect metrics (every 15 seconds)
+      evaluation_interval: 15s      # How often to evaluate alerting rules
+
+    # Scrape configurations — defines WHAT to scrape
+    scrape_configs:
+      # -----------------------------------------
+      # Job 1: Scrape Prometheus itself
+      # -----------------------------------------
+      # Prometheus exposes its own metrics (how much memory it uses, etc.)
+      - job_name: "prometheus"
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      # -----------------------------------------
+      # Job 2: Scrape our Backend API
+      # -----------------------------------------
+      # We tell Prometheus the backend's address inside the cluster.
+      # Format: <service-name>.<namespace>.svc.cluster.local:<port>
+      # This is Kubernetes DNS — every Service gets a DNS entry automatically!
+      - job_name: "backend"
+        metrics_path: "/metrics"     # The endpoint that exposes Prometheus metrics
+        static_configs:
+          - targets: ["backend.proximity-alarm.svc.cluster.local:8000"]
+            labels:
+              app: "proximity-alarm"
+              component: "backend"
+
+---
+
+# -----------------------------------------------------------------------------
+# 2. ClusterRole & ClusterRoleBinding — RBAC Permissions
+# -----------------------------------------------------------------------------
+# Prometheus needs permission to discover pods across namespaces.
+# RBAC (Role-Based Access Control) in K8s controls who can do what.
+#
+# ClusterRole: defines permissions (what actions are allowed)
+# ClusterRoleBinding: assigns those permissions to a ServiceAccount
+# ServiceAccount: an identity for pods (like a "user account" for containers)
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+  - apiGroups: [""]                  # Core API group (pods, services, endpoints)
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]  # Read-only access
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["get"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus                   # Reference the ClusterRole above
+subjects:
+  - kind: ServiceAccount
+    name: prometheus                 # Reference the ServiceAccount above
+    namespace: monitoring
+
+---
+
+# -----------------------------------------------------------------------------
+# 3. Deployment
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus   # Use the ServiceAccount with RBAC permissions
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.51.0    # Official Prometheus image
+          imagePullPolicy: Never             # Use locally-loaded image
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"   # Point to our config
+            - "--storage.tsdb.path=/prometheus"                # Where to store data
+            - "--storage.tsdb.retention.time=7d"               # Keep data for 7 days
+            - "--web.enable-lifecycle"                          # Allow config reload via API
+          ports:
+            - containerPort: 9090          # Prometheus web UI and API port
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus   # Mount our ConfigMap as a file
+            - name: storage
+              mountPath: /prometheus        # Persistent storage for metrics data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config        # Mount our ConfigMap
+        - name: storage
+          emptyDir: {}                     # Temporary storage (lost on pod restart)
+                                           # For production, use a PVC like PostgreSQL
+
+---
+
+# -----------------------------------------------------------------------------
+# 4. Service
+# -----------------------------------------------------------------------------
+# NodePort so we can access the Prometheus web UI from our browser.
+# Access at: http://$(minikube ip):30090
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  type: NodePort
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090                # Access Prometheus at this external port
+      protocol: TCP
