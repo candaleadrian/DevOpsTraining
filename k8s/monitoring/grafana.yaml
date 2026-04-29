@@ -170,6 +170,250 @@ data:
       "uid": "proximity-alarm-backend",
       "version": 1
     }
+  # -----------------------------------------------------------------------
+  # Dashboard 2: Kubernetes Pods & Containers
+  # -----------------------------------------------------------------------
+  # Shows pod counts and container counts for frontend and backend.
+  # Data comes from kube-state-metrics which watches the K8s API.
+  #
+  # KEY METRICS:
+  #   kube_pod_info             — one row per pod (has labels: namespace, pod, node)
+  #   kube_pod_container_info   — one row per container (has labels: namespace, pod, container)
+  #   kube_deployment_status_replicas           — current replica count
+  #   kube_deployment_spec_replicas             — desired replica count
+  #   kube_pod_status_phase                     — pod phase (Running, Pending, Failed, etc.)
+  # -----------------------------------------------------------------------
+  kubernetes-dashboard.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "title": "🟢 Running Backend Pods",
+          "description": "Number of backend pods currently in Running phase",
+          "type": "stat",
+          "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "count(kube_pod_status_phase{namespace=\"proximity-alarm\", phase=\"Running\"} == 1 and on(pod) kube_pod_labels{label_component=\"backend\"})",
+              "legendFormat": "backend pods"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value"
+          }
+        },
+        {
+          "title": "🟢 Running Frontend Pods",
+          "description": "Number of frontend pods currently in Running phase",
+          "type": "stat",
+          "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "count(kube_pod_status_phase{namespace=\"proximity-alarm\", phase=\"Running\"} == 1 and on(pod) kube_pod_labels{label_component=\"frontend\"})",
+              "legendFormat": "frontend pods"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value"
+          }
+        },
+        {
+          "title": "🟢 Running PostgreSQL Pods",
+          "description": "Number of PostgreSQL pods currently in Running phase",
+          "type": "stat",
+          "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "count(kube_pod_status_phase{namespace=\"proximity-alarm\", phase=\"Running\"} == 1 and on(pod) kube_pod_labels{label_component=\"postgres\"})",
+              "legendFormat": "postgres pods"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value"
+          }
+        },
+        {
+          "title": "Total Pods (proximity-alarm)",
+          "description": "Total number of pods across the proximity-alarm namespace",
+          "type": "stat",
+          "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "count(kube_pod_info{namespace=\"proximity-alarm\"})",
+              "legendFormat": "total pods"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "blue", "value": null }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value"
+          }
+        },
+        {
+          "title": "Containers per Pod",
+          "description": "Shows how many containers each pod is running. In Kubernetes, a pod can have multiple containers (e.g. sidecars, init containers). This helps you see the pod structure.",
+          "type": "table",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "count by (pod) (kube_pod_container_info{namespace=\"proximity-alarm\"})",
+              "legendFormat": "{{pod}}",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": { "Time": true },
+                "renameByName": {
+                  "pod": "Pod Name",
+                  "Value": "Container Count"
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Container Count" },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": { "mode": "gradient", "type": "color-background" }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "yellow", "value": 2 },
+                        { "color": "orange", "value": 3 }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "title": "Deployment Replicas: Desired vs Available",
+          "description": "Compares how many replicas each deployment WANTS vs. how many are actually AVAILABLE. If these don't match, something is wrong (pod crashing, not enough resources, etc.)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "kube_deployment_spec_replicas{namespace=\"proximity-alarm\"}",
+              "legendFormat": "{{deployment}} desired"
+            },
+            {
+              "expr": "kube_deployment_status_replicas_available{namespace=\"proximity-alarm\"}",
+              "legendFormat": "{{deployment}} available"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Pod Status by Phase",
+          "description": "Shows pod distribution across phases: Running, Pending, Succeeded, Failed, Unknown. Healthy pods should be in Running phase.",
+          "type": "piechart",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+          "datasource": { "type": "prometheus", "uid": "" },
+          "targets": [
+            {
+              "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"proximity-alarm\"} == 1)",
+              "legendFormat": "{{phase}}"
+            }
+          ]
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["proximity-alarm", "kubernetes"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Proximity Alarm - Kubernetes",
+      "uid": "proximity-alarm-kubernetes",
+      "version": 1
+    }
 
 ---
 

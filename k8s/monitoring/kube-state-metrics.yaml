@@ -1,0 +1,157 @@
+# =============================================================================
+# KUBE-STATE-METRICS — Exposes Kubernetes Object Metrics to Prometheus
+# =============================================================================
+#
+# WHAT IS KUBE-STATE-METRICS?
+# It's a service that listens to the Kubernetes API and generates metrics
+# about the STATE of objects: pods, deployments, containers, nodes, etc.
+#
+# Without it, Prometheus only knows about YOUR app's /metrics endpoints.
+# With it, Prometheus can answer questions like:
+# - How many pods are running for each deployment?
+# - How many containers are in each pod?
+# - Are any pods in CrashLoopBackOff?
+# - How many replicas does a deployment want vs. actually have?
+#
+# FLOW: K8s API → kube-state-metrics (converts to Prometheus format)
+#       → Prometheus scrapes kube-state-metrics → Grafana visualizes
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. ServiceAccount — Identity for the kube-state-metrics pod
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+
+---
+
+# -----------------------------------------------------------------------------
+# 2. ClusterRole — What kube-state-metrics is allowed to read
+# -----------------------------------------------------------------------------
+# It needs read access to most Kubernetes objects to report their state.
+# This is read-only — it never modifies anything.
+# -----------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-state-metrics
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - nodes
+      - namespaces
+      - services
+      - endpoints
+      - persistentvolumeclaims
+      - configmaps
+      - secrets
+      - resourcequotas
+      - replicationcontrollers
+      - limitranges
+    verbs: ["list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["list", "watch"]
+
+---
+
+# -----------------------------------------------------------------------------
+# 3. ClusterRoleBinding — Connects the ServiceAccount to the ClusterRole
+# -----------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-state-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-state-metrics
+subjects:
+  - kind: ServiceAccount
+    name: kube-state-metrics
+    namespace: monitoring
+
+---
+
+# -----------------------------------------------------------------------------
+# 4. Deployment
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+  labels:
+    app: kube-state-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-state-metrics
+  template:
+    metadata:
+      labels:
+        app: kube-state-metrics
+    spec:
+      serviceAccountName: kube-state-metrics
+      containers:
+        - name: kube-state-metrics
+          # Official kube-state-metrics image from the Kubernetes project
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.12.0
+          imagePullPolicy: Never        # Use locally-loaded image
+          ports:
+            - containerPort: 8080       # Metrics endpoint
+              name: metrics
+            - containerPort: 8081       # Self-metrics (telemetry about itself)
+              name: telemetry
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+
+---
+
+# -----------------------------------------------------------------------------
+# 5. Service — So Prometheus can discover and scrape it
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+  labels:
+    app: kube-state-metrics
+spec:
+  type: ClusterIP                     # Internal only — Prometheus scrapes it
+  selector:
+    app: kube-state-metrics
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: metrics

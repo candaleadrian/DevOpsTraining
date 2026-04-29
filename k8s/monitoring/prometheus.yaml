@@ -60,6 +60,15 @@ data:
               app: "proximity-alarm"
               component: "backend"
 
+      # -----------------------------------------
+      # Job 3: Scrape kube-state-metrics
+      # -----------------------------------------
+      # kube-state-metrics exposes Kubernetes object state as Prometheus
+      # metrics: pod counts, container counts, deployment replicas, etc.
+      - job_name: "kube-state-metrics"
+        static_configs:
+          - targets: ["kube-state-metrics.monitoring.svc.cluster.local:8080"]
+
 ---
 
 # -----------------------------------------------------------------------------
