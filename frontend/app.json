@@ -33,12 +33,7 @@
         "FOREGROUND_SERVICE_LOCATION",
         "VIBRATE"
       ],
-      "package": "com.proximityalarm.app",
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyDm1i3FsDg8Lq__WihtxjjXwZZx1NimYTY"
-        }
-      }
+      "package": "com.proximityalarm.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
